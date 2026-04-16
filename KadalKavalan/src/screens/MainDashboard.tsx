@@ -34,6 +34,9 @@ const { width } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const ODOMETER_DIGIT_HEIGHT = 58;
+const ODOMETER_COLUMN_WIDTH = 42;
+const ODOMETER_FIXED_WIDTH = ODOMETER_COLUMN_WIDTH * 3;
 
 type MetricIcon = React.ComponentProps<typeof Feather>['name'];
 
@@ -160,7 +163,162 @@ const TimelineCapsule: React.FC<{
   );
 };
 
-const MetricCard: React.FC<{
+const OdometerDigit: React.FC<{
+  digit: number;
+  color: string;
+}> = React.memo(({ digit, color }) => {
+  const progress = useSharedValue(digit);
+
+  useEffect(() => {
+    const current = Math.max(0, Math.round(progress.value));
+    const currentDigit = current % 10;
+    const cycleBase = current - currentDigit;
+    const shouldWrap = digit <= currentDigit;
+    const target = cycleBase + digit + (shouldWrap ? 10 : 0);
+
+    progress.value = withTiming(target, {
+      duration: 980,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [digit, progress]);
+
+  const translateStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -progress.value * ODOMETER_DIGIT_HEIGHT }],
+  }));
+
+  const digits = useMemo(() => Array.from({ length: 20 }, (_, i) => i % 10), []);
+
+  return (
+    <View style={styles.odometerDigitWindow}>
+      <AnimatedView style={translateStyle}>
+        {digits.map((value, index) => (
+          <Text key={`digit-${value}-${index}`} style={[styles.odometerDigitText, { color }]}>
+            {value}
+          </Text>
+        ))}
+      </AnimatedView>
+    </View>
+  );
+});
+
+const OdometerNumber: React.FC<{
+  value: number;
+  color: string;
+}> = React.memo(({ value, color }) => {
+  const normalized = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
+  const chars = useMemo(() => normalized.toString().split(''), [normalized]);
+
+  return (
+    <View style={styles.odometerFixedRail}>
+      <View style={styles.odometerRow}>
+      {chars.map((char, index) => {
+        const maybeDigit = Number(char);
+        if (!Number.isFinite(maybeDigit)) {
+          return (
+            <Text key={`symbol-${char}-${index}`} style={[styles.odometerDigitText, { color }]}>
+              {char}
+            </Text>
+          );
+        }
+
+        return <OdometerDigit key={`odometer-${index}`} digit={maybeDigit} color={color} />;
+      })}
+      </View>
+    </View>
+  );
+});
+
+const WindHeroCard: React.FC<{
+  value: number;
+  label: string;
+  unit: string;
+  descriptor: string;
+  theme: ThemeRef;
+  delay?: number;
+}> = React.memo(({ value, label, unit, descriptor, theme, delay = 0 }) => {
+  const mount = useSharedValue(0);
+  const press = useSharedValue(1);
+  const gradientShift = useSharedValue(0);
+
+  useEffect(() => {
+    mount.value = withDelay(
+      delay,
+      withTiming(1, {
+        duration: 760,
+        easing: Easing.out(Easing.cubic),
+      })
+    );
+
+    gradientShift.value = withRepeat(
+      withTiming(1, {
+        duration: 6200,
+        easing: Easing.inOut(Easing.quad),
+      }),
+      -1,
+      true
+    );
+  }, [delay, gradientShift, mount]);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: mount.value,
+    transform: [{ scale: (0.96 + mount.value * 0.04) * press.value }],
+  }));
+
+  const radialAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: 0.14 + gradientShift.value * 0.08,
+    transform: [{ translateX: -8 + gradientShift.value * 16 }, { translateY: -4 + gradientShift.value * 8 }],
+  }));
+
+  return (
+    <AnimatedPressable
+      style={[
+        styles.windHeroCard,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          shadowOpacity: theme.isDark ? 0.2 : 0.12,
+        },
+        cardAnimatedStyle,
+      ]}
+      onPressIn={() => {
+        press.value = withTiming(0.97, { duration: 120, easing: Easing.out(Easing.quad) });
+      }}
+      onPressOut={() => {
+        press.value = withTiming(1, { duration: 170, easing: Easing.out(Easing.quad) });
+      }}
+    >
+      <AnimatedView style={[styles.windHeroRadial, radialAnimatedStyle]}>
+        <LinearGradient
+          colors={[
+            theme.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)',
+            'rgba(255,255,255,0)',
+          ]}
+          start={{ x: 0.2, y: 0.2 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </AnimatedView>
+
+      <View style={styles.windHeroTop}>
+        <View style={[styles.windHeroIconWrap, { backgroundColor: theme.colors.surfaceSecondary }]}> 
+          <Feather name="wind" size={20} color={theme.colors.iconMuted} />
+        </View>
+        <Text style={[styles.windHeroLabel, { color: theme.colors.textSecondary }]}>{label}</Text>
+      </View>
+
+      <View style={styles.windHeroCenter}>
+        <OdometerNumber value={value} color={theme.colors.textPrimary} />
+      </View>
+
+      <View style={styles.windHeroBottom}>
+        <Text style={[styles.windHeroUnit, { color: theme.colors.textPrimary }]}>{unit}</Text>
+        <Text style={[styles.windHeroDescriptor, { color: theme.colors.textSecondary }]}>{descriptor}</Text>
+      </View>
+    </AnimatedPressable>
+  );
+});
+
+const SecondaryMetricCard: React.FC<{
   label: string;
   value: number;
   unit: string;
@@ -168,22 +326,57 @@ const MetricCard: React.FC<{
   decimals?: number;
   delay?: number;
   theme: ThemeRef;
-}> = ({ label, value, unit, icon, decimals = 1, delay = 0, theme }) => {
-  const display = useCountUp(Number.isFinite(value) ? value : 0, 1000, decimals);
+  fullWidth?: boolean;
+}> = React.memo(({ label, value, unit, icon, decimals = 1, delay = 0, theme, fullWidth = false }) => {
+  const mount = useSharedValue(0);
+  const press = useSharedValue(1);
+  const safeValue = Number.isFinite(value) ? value : 0;
+
+  useEffect(() => {
+    mount.value = withDelay(
+      delay,
+      withTiming(1, {
+        duration: 650,
+        easing: Easing.out(Easing.cubic),
+      })
+    );
+  }, [delay, mount]);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: mount.value,
+    transform: [{ translateY: 20 * (1 - mount.value) }, { scale: press.value }],
+  }));
 
   return (
-    <PremiumCard theme={theme} style={styles.metricCard} delay={delay}>
-      <View style={[styles.metricIconWrap, { backgroundColor: theme.colors.surfaceSecondary }]}> 
+    <AnimatedPressable
+      style={[
+        styles.secondaryMetricCard,
+        fullWidth && styles.secondaryMetricCardFull,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          shadowOpacity: theme.isDark ? 0.18 : 0.1,
+        },
+        cardAnimatedStyle,
+      ]}
+      onPressIn={() => {
+        press.value = withTiming(0.97, { duration: 120, easing: Easing.out(Easing.quad) });
+      }}
+      onPressOut={() => {
+        press.value = withTiming(1, { duration: 170, easing: Easing.out(Easing.quad) });
+      }}
+    >
+      <View style={[styles.metricIconWrap, styles.metricIconWrapAligned, { backgroundColor: theme.colors.surfaceSecondary }]}> 
         <Feather name={icon} size={18} color={theme.colors.iconMuted} />
       </View>
       <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>{label}</Text>
       <Text style={[styles.metricValue, { color: theme.colors.textPrimary }]}>
-        {display}
+        {safeValue.toFixed(decimals)}
         {unit}
       </Text>
-    </PremiumCard>
+    </AnimatedPressable>
   );
-};
+});
 
 const MainDashboard: React.FC = () => {
   const { t, zone, language, boatClass } = useUser();
@@ -605,43 +798,46 @@ const MainDashboard: React.FC = () => {
           </Text>
         </PremiumCard>
 
-        <View style={styles.weatherGrid}>
-          <MetricCard
+        <View style={styles.metricsSection}>
+          <WindHeroCard
             theme={theme}
-            icon="droplet"
-            label={t?.wave_height?.split(':')[0] || 'Wave'}
-            value={conditions?.wave_height_m ?? 0}
-            unit="m"
-            decimals={1}
-            delay={280}
-          />
-          <MetricCard
-            theme={theme}
-            icon="wind"
-            label={t?.wind_speed?.split(':')[0] || 'Wind'}
             value={conditions?.wind_speed_kmh ?? 0}
-            unit=" km/h"
-            decimals={0}
-            delay={340}
+            label="WIND"
+            unit="km/h"
+            descriptor="Real-time sustained wind"
+            delay={260}
           />
-          <MetricCard
-            theme={theme}
-            icon="eye"
-            label={t?.visibility?.split(':')[0] || 'Visibility'}
-            value={conditions?.visibility_km ?? 0}
-            unit=" km"
-            decimals={1}
-            delay={400}
-          />
-          <MetricCard
-            theme={theme}
-            icon="activity"
-            label={t?.swell_height?.split(':')[0] || 'Swell'}
-            value={conditions?.swell_height_m ?? 0}
-            unit="m"
-            decimals={1}
-            delay={460}
-          />
+
+          <View style={styles.secondaryMetricGrid}>
+            <SecondaryMetricCard
+              theme={theme}
+              icon="droplet"
+              label={t?.wave_height?.split(':')[0] || 'Wave'}
+              value={conditions?.wave_height_m ?? 0}
+              unit="m"
+              decimals={1}
+              delay={340}
+            />
+            <SecondaryMetricCard
+              theme={theme}
+              icon="eye"
+              label={t?.visibility?.split(':')[0] || 'Visibility'}
+              value={conditions?.visibility_km ?? 0}
+              unit=" km"
+              decimals={1}
+              delay={420}
+            />
+            <SecondaryMetricCard
+              theme={theme}
+              icon="activity"
+              label={t?.swell_height?.split(':')[0] || 'Swell'}
+              value={conditions?.swell_height_m ?? 0}
+              unit="m"
+              decimals={1}
+              delay={500}
+              fullWidth
+            />
+          </View>
         </View>
 
         <PremiumCard theme={theme} style={styles.tideCard} delay={520}>
@@ -895,18 +1091,125 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  weatherGrid: {
+  metricsSection: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+  },
+  windHeroCard: {
+    width: '100%',
+    minHeight: 196,
+    borderRadius: 28,
+    borderWidth: 1,
+    paddingHorizontal: 22,
+    paddingVertical: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  windHeroRadial: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    top: -72,
+    left: 30,
+    borderRadius: 110,
+  },
+  windHeroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 40,
+  },
+  windHeroIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  windHeroLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    lineHeight: 16,
+  },
+  windHeroCenter: {
+    marginTop: 14,
+    marginBottom: 14,
+    minHeight: ODOMETER_DIGIT_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  windHeroBottom: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
+    minHeight: 20,
+  },
+  windHeroUnit: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  windHeroDescriptor: {
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'right',
+  },
+  odometerFixedRail: {
+    width: ODOMETER_FIXED_WIDTH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  odometerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minHeight: ODOMETER_DIGIT_HEIGHT,
+  },
+  odometerDigitWindow: {
+    height: ODOMETER_DIGIT_HEIGHT,
+    width: ODOMETER_COLUMN_WIDTH,
+    overflow: 'hidden',
+  },
+  odometerDigitText: {
+    height: ODOMETER_DIGIT_HEIGHT,
+    fontSize: 52,
+    lineHeight: ODOMETER_DIGIT_HEIGHT,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.12)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  secondaryMetricGrid: {
+    marginTop: 18,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 10,
-    marginTop: 8,
-    gap: 10,
+    justifyContent: 'space-between',
+    rowGap: 12,
+    columnGap: 12,
   },
-  metricCard: {
-    width: (width - 52) / 2,
-    marginHorizontal: 6,
-    padding: 16,
-    alignItems: 'center',
+  secondaryMetricCard: {
+    width: (width - 44) / 2,
+    minHeight: 124,
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  secondaryMetricCardFull: {
+    width: '100%',
   },
   metricIconWrap: {
     width: 40,
@@ -914,15 +1217,22 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  metricIconWrapAligned: {
+    alignSelf: 'flex-start',
   },
   metricLabel: {
     fontSize: 12,
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   metricValue: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
+    lineHeight: 26,
   },
   tideCard: {
     marginTop: 8,
