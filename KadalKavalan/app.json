@@ -38,7 +38,7 @@
       "eas": {
         "projectId": "kadal-kavalan-app"
       },
-      "mlApiUrl": "http://localhost:8000"
+      "mlApiUrl": "https://tensor-26-team-autogenx-1.onrender.com"
     }
   }
 }
