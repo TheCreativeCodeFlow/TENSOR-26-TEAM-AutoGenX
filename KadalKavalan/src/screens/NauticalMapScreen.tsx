@@ -121,10 +121,12 @@ const NauticalMapScreen: React.FC = () => {
 
   const init = async () => {
     console.log('[Map] init called');
-    await getLocation();
-    await fetchWeather();
-    setLoading(false);
-    console.log('[Map] init done');
+    try {
+      await Promise.allSettled([getLocation(), fetchWeather()]);
+    } finally {
+      setLoading(false);
+      console.log('[Map] init done');
+    }
   };
 
   const getLocation = async () => {
