@@ -37,7 +37,8 @@
     "extra": {
       "eas": {
         "projectId": "kadal-kavalan-app"
-      }
+      },
+      "mlApiUrl": "http://localhost:8000"
     }
   }
 }
