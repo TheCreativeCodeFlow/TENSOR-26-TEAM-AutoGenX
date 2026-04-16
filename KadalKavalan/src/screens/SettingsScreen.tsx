@@ -8,6 +8,7 @@ import {
   Platform,
   Linking,
   Alert,
+  TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Animated, {
@@ -22,6 +23,7 @@ import { useWeather } from '../context/WeatherContext';
 import { Language, languageNames } from '../i18n';
 import { BoatClass } from '../data/zones';
 import { ThemeMode, useAppTheme } from '../theme';
+import Constants from 'expo-constants';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -90,12 +92,14 @@ const SettingsScreen: React.FC = () => {
     setBoatClass,
     zone,
     preferences,
+    setPreferences,
     setIsOnboarded,
   } = useUser();
   const { zoneData, refreshData } = useWeather();
   const theme = useAppTheme();
 
   const [whatsappEnabled, setWhatsappEnabled] = useState(preferences.whatsapp_enabled);
+  const [whatsappNumber, setWhatsappNumber] = useState(preferences.whatsapp_number);
   const [smsEnabled, setSmsEnabled] = useState(preferences.sms_enabled);
   const [pushEnabled, setPushEnabled] = useState(preferences.notifications_enabled);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
@@ -127,12 +131,98 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleWhatsApp = () => {
-    Alert.alert(
-      'WhatsApp Alerts',
-      'To receive WhatsApp alerts, add +91 98765 43210 to contacts and send START to opt-in.',
-      [{ text: 'OK' }]
-    );
+  const handleWhatsAppToggle = async (value: boolean) => {
+    setWhatsappEnabled(value);
+    setPreferences({
+      ...preferences,
+      whatsapp_enabled: value,
+      whatsapp_number: value ? whatsappNumber : '',
+    });
+
+    if (value && whatsappNumber && whatsappNumber.length >= 10) {
+      try {
+        const candidates = ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000'];
+        let backendUrl = candidates[0];
+        for (const url of candidates) {
+          try {
+            const res = await fetch(`${url}/health`, { method: 'GET' });
+            if (res.ok) {
+              backendUrl = url;
+              break;
+            }
+          } catch {}
+        }
+        await fetch(`${backendUrl}/whatsapp/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone_number: whatsappNumber,
+            zone_id: zone?.id || 'TN-01',
+            boat_class: boatClass,
+            language: language,
+          }),
+        });
+      } catch (e) {
+        console.log('[WhatsApp] Subscribe failed:', e);
+      }
+    }
+  };
+
+  const handleWhatsAppNumberChange = (text: string) => {
+    const cleaned = text.replace(/[^0-9+]/g, '');
+    setWhatsappNumber(cleaned);
+    setPreferences({
+      ...preferences,
+      whatsapp_number: cleaned,
+    });
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!whatsappNumber || whatsappNumber.length < 10) {
+      Alert.alert('Enter Phone Number', 'Please enter a valid WhatsApp number to receive test alerts.');
+      return;
+    }
+    try {
+      const candidates = ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000'];
+      let backendUrl = candidates[0];
+      for (const url of candidates) {
+        try {
+          const res = await fetch(`${url}/health`, { method: 'GET' });
+          if (res.ok) {
+            backendUrl = url;
+            break;
+          }
+        } catch {}
+      }
+      const res = await fetch(`${backendUrl}/whatsapp/alert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: whatsappNumber }),
+      });
+      if (res.ok) {
+        Alert.alert('Success', 'Test alert sent! Check WhatsApp.');
+      } else {
+        Alert.alert('Error', 'Failed to send alert.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not connect to server.');
+    }
+  };
+
+  const handleSmsToggle = (value: boolean) => {
+    setSmsEnabled(value);
+    setPreferences({
+      ...preferences,
+      sms_enabled: value,
+    });
+  };
+
+  const handlePushToggle = (value: boolean) => {
+    setPushEnabled(value);
+    setPreferences({
+      ...preferences,
+      notifications_enabled: value,
+    });
   };
 
   const handleEmergency = () => {
@@ -227,13 +317,25 @@ const SettingsScreen: React.FC = () => {
               <Text style={[styles.settingLabel, stylesByTheme.label]}>WhatsApp Alerts</Text>
               <Text style={[styles.settingValue, stylesByTheme.value]}>Daily morning alerts</Text>
             </View>
-            <ToggleSwitch value={whatsappEnabled} onChange={setWhatsappEnabled} theme={theme} />
+            <ToggleSwitch value={whatsappEnabled} onChange={handleWhatsAppToggle} theme={theme} />
           </View>
           {whatsappEnabled ? (
-            <Pressable style={styles.previewRow} onPress={handleWhatsApp}>
-              <Feather name="message-circle" size={14} color={theme.colors.safe} />
-              <Text style={[styles.previewText, { color: theme.colors.safe }]}>Preview WhatsApp Message</Text>
-            </Pressable>
+            <View style={styles.whatsappInputRow}>
+              <TextInput
+                style={[styles.phoneInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border }]}
+                value={whatsappNumber}
+                onChangeText={handleWhatsAppNumberChange}
+                placeholder="+91XXXXXXXXXX"
+                placeholderTextColor={theme.colors.textSecondary}
+                keyboardType="phone-pad"
+              />
+              <Pressable
+                style={[styles.testButton, { backgroundColor: theme.colors.safe }]}
+                onPress={handleTestWhatsApp}
+              >
+                <Text style={styles.testButtonText}>Test</Text>
+              </Pressable>
+            </View>
           ) : null}
           <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
           <View style={styles.settingRow}>
@@ -241,7 +343,7 @@ const SettingsScreen: React.FC = () => {
               <Text style={[styles.settingLabel, stylesByTheme.label]}>SMS Alerts</Text>
               <Text style={[styles.settingValue, stylesByTheme.value]}>Fallback alerts</Text>
             </View>
-            <ToggleSwitch value={smsEnabled} onChange={setSmsEnabled} theme={theme} />
+            <ToggleSwitch value={smsEnabled} onChange={handleSmsToggle} theme={theme} />
           </View>
           <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
           <View style={styles.settingRow}>
@@ -249,7 +351,7 @@ const SettingsScreen: React.FC = () => {
               <Text style={[styles.settingLabel, stylesByTheme.label]}>Push Notifications</Text>
               <Text style={[styles.settingValue, stylesByTheme.value]}>In-app alerts</Text>
             </View>
-            <ToggleSwitch value={pushEnabled} onChange={setPushEnabled} theme={theme} />
+            <ToggleSwitch value={pushEnabled} onChange={handlePushToggle} theme={theme} />
           </View>
         </SurfaceCard>
 
@@ -450,6 +552,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   previewText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  whatsappInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 2,
+    gap: 8,
+  },
+  phoneInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  testButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+  testButtonText: {
+    color: '#fff',
     fontSize: 13,
     fontWeight: '600',
   },

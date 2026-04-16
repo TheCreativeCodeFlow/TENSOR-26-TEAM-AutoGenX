@@ -39,6 +39,7 @@ export interface UserPreferences {
   language: Language;
   notifications_enabled: boolean;
   whatsapp_enabled: boolean;
+  whatsapp_number: string;
   sms_enabled: boolean;
   morning_alert_time: string;
 }
@@ -49,6 +50,7 @@ export const defaultPreferences: UserPreferences = {
   language: 'ta',
   notifications_enabled: true,
   whatsapp_enabled: true,
+  whatsapp_number: '',
   sms_enabled: false,
   morning_alert_time: '05:00',
 };

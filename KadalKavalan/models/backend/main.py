@@ -10,9 +10,14 @@ Endpoints:
     POST /predict/day-safety
     POST /predict/hourly-risk
     POST /predict/return-time
+    POST /whatsapp/subscribe
+    POST /whatsapp/unsubscribe
+    POST /whatsapp/alert
+    GET /whatsapp/status
     GET /logs
 """
 
+import requests
 import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +29,31 @@ import os
 import json
 import numpy as np
 from datetime import datetime
+
+from dotenv import load_dotenv
+load_dotenv()
+
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
+
+OPEN_METEO_MARINE = 'https://marine-api.open-meteo.com/v1/marine'
+OPEN_METEO_WEATHER = 'https://api.open-meteo.com/v1/forecast'
+
+twilio_client = None
+twilio_configured = False
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    try:
+        from twilio.rest import Client
+        twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        twilio_configured = True
+        print("[OK] Twilio client initialized")
+    except Exception as e:
+        print(f"[WARN] Twilio not available: {e}")
+
+print(f"[*] Twilio configured: {twilio_configured}, WhatsApp Number: {TWILIO_WHATSAPP_NUMBER}")
+
+whatsapp_subscribers = {}
 
 # Setup CORS for React Native app
 app = FastAPI(title="Kadal Kavalan ML API", version="1.0.0")
@@ -65,7 +95,6 @@ print("="*50)
 
 MODEL_DIR = os.path.dirname(__file__)
 
-# Prefer XGBoost if available; fallback to sklearn/joblib mode otherwise.
 USE_XGB = False
 try:
     import xgboost as xgb
@@ -160,6 +189,15 @@ class ReturnTimeRequest(BaseModel):
     weather_code: int
     tide_state: str
 
+class WhatsAppSubscribeRequest(BaseModel):
+    phone_number: str
+    zone_id: str
+    boat_class: str
+    language: str = 'en'
+
+class WhatsAppAlertRequest(BaseModel):
+    phone_number: Optional[str] = None
+
 # ============================================================================
 # LOAD MODELS
 # ============================================================================
@@ -176,7 +214,6 @@ def load_model(name, model_path):
     
     try:
         if USE_XGB:
-            # day_safety is a classifier, others are regressors
             if name == 'day_safety':
                 model = xgb.XGBClassifier()
             else:
@@ -193,7 +230,6 @@ def load_model(name, model_path):
         print(f"[ERROR] Loading {name}: {e}")
         return None
 
-# Try to load models
 day_safety_path = os.path.join(MODEL_DIR, 'day_safety.json')
 hourly_risk_path = os.path.join(MODEL_DIR, 'hourly_risk.json')
 return_time_path = os.path.join(MODEL_DIR, 'return_time.json')
@@ -214,22 +250,18 @@ print("="*50 + "\n")
 # ============================================================================
 
 def encode_zone(zone_id: str) -> int:
-    """Encode zone ID to integer"""
     zone_map = {z['id']: i for i, z in enumerate(ZONES)}
     return zone_map.get(zone_id, 0)
 
 def encode_boat(boat_class: str) -> int:
-    """Encode boat class to integer"""
     normalized = (boat_class or '').strip().upper()
     return {'A': 0, 'B': 1, 'C': 2}.get(normalized, 0)
 
 def encode_tide(tide_state: str) -> int:
-    """Encode tide state to integer"""
     normalized = (tide_state or '').strip().lower()
     return {'rising': 0, 'high': 1, 'falling': 2, 'low': 3}.get(normalized, 0)
 
 def prepare_features(req) -> list:
-    """Convert request to feature array"""
     return [
         encode_zone(req.zone_id),
         encode_boat(req.boat_class),
@@ -246,8 +278,6 @@ def prepare_features(req) -> list:
     ]
 
 def simulate_prediction(features: list, model_type: str) -> float:
-    """Fallback simulation when model not loaded"""
-    # Simple heuristic-based prediction
     wave_score = min(100, features[5] * 40)
     wind_score = min(100, features[6] * 2)
     tide_score = features[11] * 10
@@ -257,8 +287,90 @@ def simulate_prediction(features: list, model_type: str) -> float:
         return 1 if risk < 40 else 0
     elif model_type == 'hourly_risk':
         return (wave_score + wind_score) * 0.8
-    else:  # return_time
+    else:
         return 6 + (features[5] * 2) + (features[6] * 0.1)
+
+# ============================================================================
+# WHATSAPP HELPERS
+# ============================================================================
+
+def format_whatsapp_message(zone_id: str, zone_name: str, risk_level: str, wave_height: float, wind_speed: float, safe_window: str) -> str:
+    return (
+        f"🌊 KADAL KAVALAN\n"
+        f"📍 {zone_name}\n"
+        f"⚠️ Risk: {risk_level}\n"
+        f"🌊 Wave: {wave_height:.1f}m\n"
+        f"💨 Wind: {wind_speed:.0f} km/h\n"
+        f"⏰ Safe Window: {safe_window}"
+    )
+
+def send_whatsapp_message(phone_number: str, message: str) -> bool:
+    """Send WhatsApp message via Twilio"""
+    if not twilio_configured or not TWILIO_WHATSAPP_NUMBER:
+        print(f"[WARN] Twilio not configured, skipping message to {phone_number}")
+        return False
+    try:
+        twilio_client.messages.create(
+            from_=f"whatsapp:{TWILIO_WHATSAPP_NUMBER}",
+            body=message,
+            to=f"whatsapp:{phone_number}"
+        )
+        print(f"[OK] WhatsApp message sent to {phone_number}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to send WhatsApp: {e}")
+        return False
+
+async def fetch_zone_weather(zone: dict) -> dict:
+    """Fetch current weather for a zone from Open-Meteo"""
+    lat = zone['lat']
+    lon = zone['lon']
+    
+    marine_url = f"{OPEN_METEO_MARINE}?latitude={lat}&longitude={lon}&current=wave_height,wave_direction,swell_wave_height&timezone=auto"
+    weather_url = f"{OPEN_METEO_WEATHER}?latitude={lat}&longitude={lon}&current=wind_speed_10m,wind_direction_10m,windgusts_10m,visibility,weather_code&timezone=auto"
+    
+    try:
+        marine_res = await requests.get(marine_url, timeout=10)
+        weather_res = await requests.get(weather_url, timeout=10)
+        
+        marine_data = marine_res.json() if marine_res.status_code == 200 else {}
+        weather_data = weather_res.json() if weather_res.status_code == 200 else {}
+        
+        current = marine_data.get('current', {})
+        current_weather = weather_data.get('current', {})
+        
+        return {
+            'wave_height': current.get('wave_height', 0) or 0,
+            'wave_direction': current.get('wave_direction', 0) or 0,
+            'swell_height': current.get('swell_wave_height', 0) or 0,
+            'wind_speed': current_weather.get('wind_speed_10m', 0) or 0,
+            'wind_gust': current_weather.get('windgusts_10m', 0) or 0,
+            'visibility': current_weather.get('visibility', 10000) or 10000,
+            'weather_code': current_weather.get('weather_code', 0),
+        }
+    except Exception as e:
+        print(f"[ERROR] Fetch weather failed: {e}")
+        return {'wave_height': 0, 'wind_speed': 0, 'safe_window': 'N/A'}
+
+def calculate_risk(weather: dict, boat_class: str) -> str:
+    """Calculate risk level based on conditions and boat class"""
+    wave = weather.get('wave_height', 0)
+    wind = weather.get('wind_speed', 0)
+    
+    thresholds = {
+        'A': {'max_wave': 1.0, 'max_wind': 28},
+        'B': {'max_wave': 2.0, 'max_wind': 40},
+        'C': {'max_wave': 3.5, 'max_wind': 55},
+    }
+    
+    t = thresholds.get(boat_class, thresholds['A'])
+    
+    if wave > t['max_wave'] * 1.5 or wind > t['max_wind'] * 1.5:
+        return "DANGER"
+    elif wave > t['max_wave'] or wind > t['max_wind']:
+        return "ADVISORY"
+    else:
+        return "SAFE"
 
 # ============================================================================
 # API ENDPOINTS
@@ -277,12 +389,12 @@ async def health():
             "hourly_risk": models['hourly_risk'] is not None,
             "return_time": models['return_time'] is not None,
         },
-        "xgboost": USE_XGB
+        "xgboost": USE_XGB,
+        "whatsapp_configured": twilio_configured
     }
 
 @app.post("/predict/day-safety")
 async def predict_day_safety(req: DaySafetyRequest):
-    """Predict if day is safe for fishing"""
     try:
         features = prepare_features(req)
         features = np.array([features])
@@ -305,7 +417,6 @@ async def predict_day_safety(req: DaySafetyRequest):
 
 @app.post("/predict/hourly-risk")
 async def predict_hourly_risk(req: HourlyRiskRequest):
-    """Predict hourly risk scores"""
     try:
         features = prepare_features(req)
         features = np.array([features])
@@ -315,18 +426,16 @@ async def predict_hourly_risk(req: HourlyRiskRequest):
         else:
             prediction = simulate_prediction(features[0].tolist(), 'hourly_risk')
         
-        # Generate 24-hour risk profile
         hourly_risk = []
         for hour in range(24):
             hour_features = features.copy()
-            hour_features[0, 4] = hour  # Change hour
+            hour_features[0, 4] = hour
             if models['hourly_risk'] is not None:
                 hrisk = models['hourly_risk'].predict(hour_features)[0]
             else:
                 hrisk = simulate_prediction(hour_features[0].tolist(), 'hourly_risk')
             hourly_risk.append(int(min(100, max(0, hrisk))))
         
-        # Find safe window
         safe_indices = [i for i, r in enumerate(hourly_risk) if r < 35]
         safe_window = None
         if safe_indices:
@@ -345,7 +454,6 @@ async def predict_hourly_risk(req: HourlyRiskRequest):
 
 @app.post("/predict/return-time")
 async def predict_return_time(req: ReturnTimeRequest):
-    """Predict return time in hours"""
     try:
         features = prepare_features(req)
         features = np.array([features])
@@ -373,7 +481,6 @@ async def predict_return_time(req: ReturnTimeRequest):
 # ============================================================================
 
 def get_risk_factors(req) -> List[str]:
-    """Get list of risk factors"""
     factors = []
     if req.wave_height > 1.0:
         factors.append(f"High waves ({req.wave_height}m)")
@@ -386,7 +493,6 @@ def get_risk_factors(req) -> List[str]:
     return factors
 
 def get_optimal_departure(req) -> int:
-    """Calculate optimal departure time"""
     if req.wave_height < 0.8 and req.wind_speed < 15:
         return 6
     elif req.wave_height < 1.2 and req.wind_speed < 20:
@@ -395,7 +501,6 @@ def get_optimal_departure(req) -> int:
 
 @app.post("/predict/all")
 async def predict_all(req: DaySafetyRequest):
-    """Get all predictions at once"""
     try:
         day_safety = await predict_day_safety(req)
         hourly_risk = await predict_hourly_risk(req)
@@ -409,9 +514,142 @@ async def predict_all(req: DaySafetyRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================================================
+# WHATSAPP ENDPOINTS
+# ============================================================================
+
+@app.post("/whatsapp/subscribe")
+async def whatsapp_subscribe(req: WhatsAppSubscribeRequest):
+    """Subscribe to WhatsApp alerts"""
+    phone = req.phone_number
+    if not phone.startswith('+'):
+        phone = f"+{phone}"
+    
+    whatsapp_subscribers[phone] = {
+        "zone_id": req.zone_id,
+        "boat_class": req.boat_class,
+        "language": req.language,
+        "subscribed_at": datetime.utcnow().isoformat()
+    }
+    
+    confirmation_msg = format_whatsapp_message(
+        req.zone_id,
+        f"Zone {req.zone_id}",
+        "CONFIRMED",
+        0.0,
+        0.0,
+        "Subscribed!"
+    )
+    send_whatsapp_message(phone, f"✅ Subscribed to Kadal Kavalan alerts!\n\n{confirmation_msg}")
+    
+    return {"status": "subscribed", "phone": phone}
+
+@app.post("/whatsapp/unsubscribe")
+async def whatsapp_unsubscribe(req: WhatsAppAlertRequest):
+    """Unsubscribe from WhatsApp alerts"""
+    phone = req.phone_number
+    if not phone.startswith('+'):
+        phone = f"+{phone}"
+    
+    if phone in whatsapp_subscribers:
+        del whatsapp_subscribers[phone]
+        send_whatsapp_message(phone, "❌ Unsubscribed from Kadal Kavalan alerts.")
+        return {"status": "unsubscribed", "phone": phone}
+    return {"status": "not_found", "phone": phone}
+
+@app.post("/whatsapp/alert")
+async def whatsapp_alert(req: WhatsAppAlertRequest):
+    """Trigger manual alert to all or specific user"""
+    if not twilio_client:
+        return {"error": "WhatsApp not configured"}
+    
+    target_phones = [req.phone_number] if req.phone_number else list(whatsapp_subscribers.keys())
+    if not target_phones:
+        return {"error": "No subscribers"}
+    
+    sent_count = 0
+    for phone in target_phones:
+        if phone not in whatsapp_subscribers:
+            continue
+        sub = whatsapp_subscribers[phone]
+        zone_id = sub.get('zone_id', 'TN-01')
+        zone = next((z for z in ZONES if z['id'] == zone_id), ZONES[0])
+        
+        weather_data = await fetch_zone_weather(zone)
+        risk_level = calculate_risk(weather_data, sub.get('boat_class', 'A'))
+        
+        message = format_whatsapp_message(
+            zone['id'],
+            zone['id'],
+            risk_level,
+            weather_data.get('wave_height', 0),
+            weather_data.get('wind_speed', 0),
+            "Manual alert"
+        )
+        if send_whatsapp_message(phone, message):
+            sent_count += 1
+    
+    return {"sent": sent_count, "total": len(target_phones)}
+
+@app.get("/whatsapp/status")
+async def whatsapp_status():
+    """Get WhatsApp subscription status"""
+    return {
+        "subscribers": list(whatsapp_subscribers.keys()),
+        "count": len(whatsapp_subscribers),
+        "twilio_configured": twilio_client is not None
+    }
+
+# ============================================================================
+# SCHEDULER
+# ============================================================================
+
+scheduler = None
+if twilio_client:
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        scheduler = AsyncIOScheduler()
+        print("[OK] APScheduler initialized")
+    except Exception as e:
+        print(f"[WARN] Scheduler not available: {e}")
+
+async def send_scheduled_alerts():
+    """Send alerts to all subscribers"""
+    if not twilio_client or not whatsapp_subscribers:
+        return
+    
+    print(f"[INFO] Sending scheduled alerts to {len(whatsapp_subscribers)} subscribers...")
+    for phone, sub in whatsapp_subscribers.items():
+        zone_id = sub.get('zone_id', 'TN-01')
+        zone = next((z for z in ZONES if z['id'] == zone_id), ZONES[0])
+        
+        try:
+            weather_data = await fetch_zone_weather(zone)
+            risk_level = calculate_risk(weather_data, sub.get('boat_class', 'A'))
+            
+            message = format_whatsapp_message(
+                zone['id'],
+                zone['id'],
+                risk_level,
+                weather_data.get('wave_height', 0),
+                weather_data.get('wind_speed', 0),
+                "10-min alert"
+            )
+            send_whatsapp_message(phone, message)
+        except Exception as e:
+            print(f"[ERROR] Scheduled alert failed: {e}")
+
+if scheduler:
+    scheduler.add_job(send_scheduled_alerts, 'interval', minutes=10, id='whatsapp_alerts')
+    scheduler.start()
+    print("[OK] WhatsApp alert scheduler started (every 10 minutes)")
+
+# ============================================================================
+# LOGS ENDPOINT
+# ============================================================================
+
 @app.get("/logs")
 async def get_logs():
-    """Get recent API request logs"""
     return {
         "logs": request_logs[-20:],
         "total": len(request_logs)
@@ -419,7 +657,6 @@ async def get_logs():
 
 @app.get("/stats")
 async def get_stats():
-    """Get API usage stats"""
     endpoint_counts = {}
     for log in request_logs:
         ep = log.get('endpoint', 'unknown')
