@@ -6,6 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
@@ -158,19 +159,27 @@ const OnboardingScreen: React.FC = () => {
           </TouchableOpacity>
           
           <Text style={styles.orText}>— {t.or} —</Text>
-          
-          <View style={styles.zoneList}>
-            {fishingZones.map((zone) => (
-              <TouchableOpacity key={zone.id} style={[styles.zoneCard, selectedZone?.id === zone.id && styles.zoneCardSelected]} onPress={() => handleSelectZone(zone)}>
-                <View style={styles.zoneInfo}>
-                  <Text style={[styles.zoneName, selectedZone?.id === zone.id && styles.zoneNameSelected]}>
-                    {selectedLang === 'ta' ? zone.name_ta : selectedLang === 'ml' ? zone.name_ml : zone.name_en}
-                  </Text>
-                  <Text style={styles.zoneState}>{zone.coastal_state}</Text>
-                </View>
-                {selectedZone?.id === zone.id && <Text style={styles.checkmark}>✓</Text>}
-              </TouchableOpacity>
-            ))}
+
+          <View style={styles.zoneListContainer}>
+            <ScrollView
+              style={styles.zoneListScroll}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.zoneListContent}
+            >
+              <View style={styles.zoneList}>
+                {fishingZones.map((zone) => (
+                  <TouchableOpacity key={zone.id} style={[styles.zoneCard, selectedZone?.id === zone.id && styles.zoneCardSelected]} onPress={() => handleSelectZone(zone)}>
+                    <View style={styles.zoneInfo}>
+                      <Text style={[styles.zoneName, selectedZone?.id === zone.id && styles.zoneNameSelected]}>
+                        {selectedLang === 'ta' ? zone.name_ta : selectedLang === 'ml' ? zone.name_ml : zone.name_en}
+                      </Text>
+                      <Text style={styles.zoneState}>{zone.coastal_state}</Text>
+                    </View>
+                    {selectedZone?.id === zone.id && <Text style={styles.checkmark}>✓</Text>}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
           </View>
         </View>
         
@@ -244,7 +253,10 @@ const styles = StyleSheet.create({
   gpsText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   orText: { textAlign: 'center', color: '#71787e', marginBottom: 16 },
   
-  zoneList: { flex: 1 },
+  zoneListContainer: { flex: 1 },
+  zoneListScroll: { flex: 1 },
+  zoneListContent: { paddingHorizontal: 16, paddingBottom: 120 },
+  zoneList: {},
   zoneCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#e5e2e1' },
   zoneCardSelected: { borderColor: '#0B4F6C', backgroundColor: '#f0f4f6' },
   zoneInfo: { flex: 1 },

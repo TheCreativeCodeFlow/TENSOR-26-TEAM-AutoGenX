@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import { Feather } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '../context/UserContext';
 import { fishingZones, FishingZone } from '../data/zones';
 import { fetchAllZonesWeather, calculateRiskScore, MarineWeatherData } from '../services/marineWeather';
 import * as Speech from 'expo-speech';
+import { useAppTheme } from '../theme';
 
 const INITIAL_REGION = {
   latitude: 12.5,
@@ -40,8 +44,65 @@ interface WebZoneDatum {
   color: string;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const ZonePreviewCard: React.FC<{
+  zone: FishingZone;
+  risk: number;
+  wave: number;
+  wind: number;
+  active: boolean;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
+}> = ({ zone, risk, wave, wind, active, onPress, colors, isDark }) => {
+  const scale = useSharedValue(1);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const riskText = risk >= 55 ? 'Danger' : risk >= 30 ? 'Advisory' : 'Safe';
+  const riskColor = risk >= 55 ? colors.danger : risk >= 30 ? colors.warning : colors.safe;
+
+  return (
+    <AnimatedPressable
+      style={[
+        styles.zoneCard,
+        style,
+        {
+          backgroundColor: colors.surface,
+          borderColor: active ? riskColor : colors.border,
+          shadowOpacity: isDark ? 0.18 : 0.12,
+        },
+      ]}
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withTiming(0.97, { duration: 130 });
+      }}
+      onPressOut={() => {
+        scale.value = withTiming(1, { duration: 170 });
+      }}
+    >
+      <LinearGradient
+        colors={[isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.92)', 'rgba(255,255,255,0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.zoneCardHighlight}
+      />
+      <Text style={[styles.zoneCardTitle, { color: colors.textPrimary }]}>{zone.name_en}</Text>
+      <Text style={[styles.zoneCardRisk, { color: riskColor }]}>{riskText}</Text>
+      <View style={styles.zoneMetricsRow}>
+        <Text style={[styles.zoneMetricText, { color: colors.textSecondary }]}>Wave {wave.toFixed(1)}m</Text>
+        <Text style={[styles.zoneMetricText, { color: colors.textSecondary }]}>Wind {Math.round(wind)}km/h</Text>
+      </View>
+    </AnimatedPressable>
+  );
+};
+
 const NauticalMapScreen: React.FC = () => {
   const { language, boatClass } = useUser();
+  const { colors, isDark } = useAppTheme();
   const mapRef = useRef<MapView>(null);
   const webMapRef = useRef<WebView>(null);
   
@@ -158,6 +219,18 @@ const NauticalMapScreen: React.FC = () => {
       };
     });
   }, [zoneWeather, boatClass, showWaves]);
+
+  const zonePreviewData = useMemo(() => {
+    return fishingZones.map((zone) => {
+      const weather = zoneWeather.get(zone.id);
+      return {
+        zone,
+        risk: weather ? calculateRiskScore(weather, boatClass) : 0,
+        wave: weather?.wave_height ?? 0,
+        wind: weather?.wind_speed ?? 0,
+      };
+    });
+  }, [boatClass, zoneWeather]);
 
   const leafletHtml = useMemo(() => {
     const zonePayload = JSON.stringify(webZoneData);
@@ -347,10 +420,10 @@ const NauticalMapScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <Text style={styles.loadingTitle}>Loading Sea Conditions...</Text>
-        <Text style={styles.loadingSub}>Fetching real-time data from Open-Meteo</Text>
-        <Text style={styles.loadingData}>
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <Text style={[styles.loadingTitle, { color: colors.textPrimary }]}>Loading Sea Conditions...</Text>
+        <Text style={[styles.loadingSub, { color: colors.textSecondary }]}>Fetching real-time data from Open-Meteo</Text>
+        <Text style={[styles.loadingData, { color: colors.textSecondary }]}> 
           {fishingZones.slice(0,3).map(z => {
             const w = zoneWeather.get(z.id);
             return `${z.id}:${w?.wave_height?.toFixed(1)||'?'}m/${w?.wind_speed?.toFixed(0)||'?'}km`;
@@ -361,15 +434,15 @@ const NauticalMapScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>🗺️ Kadal Kavalan - Sea Safety Map</Text>
-        <Text style={styles.headerSub}>
+      <View style={[styles.header, { backgroundColor: colors.surface }]}> 
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Kadal Kavalan - Sea Safety Map</Text>
+        <Text style={[styles.headerSub, { color: colors.textSecondary }]}> 
           Real-time wave & wind conditions for {fishingZones.length} zones
         </Text>
         {useWebMapFallback && (
-          <Text style={styles.headerWarning}>
+          <Text style={[styles.headerWarning, { color: colors.warning }]}> 
             Using Leaflet + OpenStreetMap fallback (no Google Maps key required).
           </Text>
         )}
@@ -411,28 +484,38 @@ const NauticalMapScreen: React.FC = () => {
       {/* Controls */}
       <View style={styles.controls}>
         <TouchableOpacity
-          style={[styles.controlBtn, useWebMapFallback && styles.controlBtnDisabled]}
+          style={[
+            styles.controlBtn,
+            { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.18 : 0.12 },
+            useWebMapFallback && styles.controlBtnDisabled,
+          ]}
           onPress={() => {
             if (useWebMapFallback) return;
             setMapType((m) => (m === 'standard' ? 'satellite' : 'standard'));
           }}
         >
-          <Text style={styles.controlIcon}>🛰️</Text>
+          <Feather name="globe" size={18} color={colors.iconMuted} />
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.controlBtn, showWaves && styles.controlBtnActive]} 
+          style={[
+            styles.controlBtn,
+            { backgroundColor: showWaves ? colors.safe : colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.18 : 0.12 },
+          ]}
           onPress={() => setShowWaves(!showWaves)}
         >
-          <Text style={styles.controlIcon}>🌊</Text>
+          <Feather name="activity" size={18} color={showWaves ? '#fff' : colors.iconMuted} />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.controlBtn} onPress={getLocation}>
-          <Text style={styles.controlIcon}>📍</Text>
+        <TouchableOpacity
+          style={[styles.controlBtn, { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.18 : 0.12 }]}
+          onPress={getLocation}
+        >
+          <Feather name="crosshair" size={18} color={colors.iconMuted} />
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={styles.controlBtn} 
+          style={[styles.controlBtn, { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.18 : 0.12 }]} 
           onPress={() => {
             if (useWebMapFallback) {
               webMapRef.current?.injectJavaScript('window.resetView(); true;');
@@ -442,33 +525,51 @@ const NauticalMapScreen: React.FC = () => {
             mapRef.current?.animateToRegion(INITIAL_REGION, 500);
           }}
         >
-          <Text style={styles.controlIcon}>🗑</Text>
+          <Feather name="rotate-ccw" size={18} color={colors.iconMuted} />
         </TouchableOpacity>
       </View>
 
       {/* Legend */}
-      <View style={styles.legend}>
+      <View style={[styles.legend, { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.18 : 0.12 }]}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.SAFE }]} />
-          <Text style={styles.legendText}>Safe</Text>
+          <Text style={[styles.legendText, { color: colors.textSecondary }]}>Safe</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.ADVISORY }]} />
-          <Text style={styles.legendText}>Advisory</Text>
+          <Text style={[styles.legendText, { color: colors.textSecondary }]}>Advisory</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.DANGER }]} />
-          <Text style={styles.legendText}>Danger</Text>
+          <Text style={[styles.legendText, { color: colors.textSecondary }]}>Danger</Text>
         </View>
+      </View>
+
+      <View style={styles.zoneGridWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneGridScroll}>
+          {zonePreviewData.map((item) => (
+            <ZonePreviewCard
+              key={item.zone.id}
+              zone={item.zone}
+              risk={item.risk}
+              wave={item.wave}
+              wind={item.wind}
+              active={selectedZone?.id === item.zone.id}
+              onPress={() => handleZonePress(item.zone)}
+              colors={colors}
+              isDark={isDark}
+            />
+          ))}
+        </ScrollView>
       </View>
 
       {/* Selected Zone Info */}
       {selectedZone && (
-        <View style={styles.popup}>
+        <View style={[styles.popup, { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.2 : 0.12 }]}>
           <View style={styles.popupHeader}>
-            <Text style={styles.popupTitle}>{selectedZone.id}</Text>
-            <Text style={styles.popupName}>{selectedZone.name_en}</Text>
-            <Text style={styles.popupState}>{selectedZone.coastal_state}</Text>
+            <Text style={[styles.popupTitle, { color: colors.textPrimary }]}>{selectedZone.id}</Text>
+            <Text style={[styles.popupName, { color: colors.textPrimary }]}>{selectedZone.name_en}</Text>
+            <Text style={[styles.popupState, { color: colors.textSecondary }]}>{selectedZone.coastal_state}</Text>
           </View>
           {(() => {
             const w = zoneWeather.get(selectedZone.id);
@@ -479,15 +580,15 @@ const NauticalMapScreen: React.FC = () => {
             return (
               <View style={styles.popupContent}>
                 <View style={styles.popupRow}>
-                  <Text style={styles.popupLabel}>🌊 Wave</Text>
-                  <Text style={styles.popupValue}>{w?.wave_height?.toFixed(1) || '?'}m</Text>
+                  <Text style={[styles.popupLabel, { color: colors.textSecondary }]}>Wave</Text>
+                  <Text style={[styles.popupValue, { color: colors.textPrimary }]}>{w?.wave_height?.toFixed(1) || '?'}m</Text>
                 </View>
                 <View style={styles.popupRow}>
-                  <Text style={styles.popupLabel}>💨 Wind</Text>
-                  <Text style={styles.popupValue}>{w?.wind_speed?.toFixed(0) || '?'}km/h</Text>
+                  <Text style={[styles.popupLabel, { color: colors.textSecondary }]}>Wind</Text>
+                  <Text style={[styles.popupValue, { color: colors.textPrimary }]}>{w?.wind_speed?.toFixed(0) || '?'}km/h</Text>
                 </View>
                 <View style={styles.popupRow}>
-                  <Text style={styles.popupLabel}>⚠️ Risk</Text>
+                  <Text style={[styles.popupLabel, { color: colors.textSecondary }]}>Risk</Text>
                   <Text style={[styles.popupValue, { color }]}>{level}</Text>
                 </View>
               </View>
@@ -500,16 +601,21 @@ const NauticalMapScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fcf9f8' },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B4F6C' },
-  loadingTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  loadingSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 8 },
-  loadingData: { fontSize: 10, color: '#0f0', marginTop: 20, fontFamily: 'monospace' },
+  container: { flex: 1 },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingTitle: { fontSize: 24, fontWeight: '700' },
+  loadingSub: { fontSize: 14, marginTop: 8 },
+  loadingData: { fontSize: 10, marginTop: 20, fontFamily: 'monospace' },
   
-  header: { backgroundColor: '#0B4F6C', paddingTop: 50, paddingBottom: 12, paddingHorizontal: 16 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-  headerWarning: { fontSize: 11, color: '#d5ecff', marginTop: 4 },
+  header: {
+    paddingTop: 50,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  headerTitle: { fontSize: 18, fontWeight: '700' },
+  headerSub: { fontSize: 12, marginTop: 4 },
+  headerWarning: { fontSize: 11, marginTop: 4 },
   
   map: { flex: 1 },
   
@@ -522,58 +628,97 @@ const styles = StyleSheet.create({
   controlBtn: {
     width: 44,
     height: 44,
-    backgroundColor: '#fff',
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
   controlBtnDisabled: {
     opacity: 0.45,
   },
-  controlBtnActive: { backgroundColor: '#0B4F6C' },
-  controlIcon: { fontSize: 20 },
   
   legend: {
     position: 'absolute',
     top: 110,
     left: 12,
-    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 8,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 },
   legendDot: { width: 12, height: 12, borderRadius: 6, marginRight: 6 },
-  legendText: { fontSize: 11, color: '#333' },
+  legendText: { fontSize: 11 },
+
+  zoneGridWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 132,
+  },
+  zoneGridScroll: {
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  zoneCard: {
+    width: 188,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  zoneCardHighlight: {
+    ...StyleSheet.absoluteFillObject,
+    height: 66,
+  },
+  zoneCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  zoneCardRisk: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  zoneMetricsRow: {
+    marginTop: 10,
+    gap: 4,
+  },
+  zoneMetricText: {
+    fontSize: 12,
+  },
   
   popup: {
     position: 'absolute',
     bottom: 20,
     left: 12,
     right: 12,
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
   },
   popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  popupTitle: { fontSize: 18, fontWeight: 'bold', color: '#0B4F6C' },
-  popupName: { fontSize: 14, color: '#333', flex: 1, marginLeft: 8 },
-  popupState: { fontSize: 12, color: '#888' },
+  popupTitle: { fontSize: 18, fontWeight: '700' },
+  popupName: { fontSize: 14, flex: 1, marginLeft: 8 },
+  popupState: { fontSize: 12 },
   popupContent: { flexDirection: 'row', justifyContent: 'space-around' },
   popupRow: { alignItems: 'center' },
-  popupLabel: { fontSize: 12, color: '#888' },
-  popupValue: { fontSize: 16, fontWeight: 'bold', color: '#333', marginTop: 4 },
+  popupLabel: { fontSize: 12 },
+  popupValue: { fontSize: 16, fontWeight: '700', marginTop: 4 },
 });
 
 export default NauticalMapScreen;

@@ -3,6 +3,14 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 
 import { useUser } from '../context/UserContext';
 import MainDashboard from '../screens/MainDashboard';
@@ -10,37 +18,86 @@ import NauticalMapScreen from '../screens/NauticalMapScreen';
 import AlertsScreen from '../screens/AlertsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
-import { getRiskColor } from '../utils/riskEngine';
+import { useAppTheme } from '../theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 const TabIcon: React.FC<{ name: string; focused: boolean; color: string }> = ({ name, focused, color }) => {
-  let icon = '';
+  const { colors } = useAppTheme();
+  let iconName: React.ComponentProps<typeof Feather>['name'] = 'circle';
   switch (name) {
     case 'Dashboard':
-      icon = '⚓';
+      iconName = 'home';
       break;
     case 'Map':
-      icon = '🗺️';
+      iconName = 'map';
       break;
     case 'Alerts':
-      icon = '🔔';
+      iconName = 'bell';
       break;
     case 'Settings':
-      icon = '⚙️';
+      iconName = 'settings';
       break;
   }
+
+  const scale = useSharedValue(focused ? 1 : 0.94);
+  const glow = useSharedValue(focused ? 1 : 0);
+
+  React.useEffect(() => {
+    scale.value = withTiming(focused ? 1 : 0.94, {
+      duration: 300,
+      easing: Easing.out(Easing.cubic),
+    });
+    glow.value = withTiming(focused ? 1 : 0, {
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [focused, glow, scale]);
+
+  const iconWrapStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const activeCircleStyle = useAnimatedStyle(() => ({
+    opacity: glow.value,
+    transform: [{ scale: 0.85 + glow.value * 0.15 }],
+  }));
   
   return (
-    <View style={styles.tabIconContainer}>
-      <Text style={[styles.tabIcon, { opacity: focused ? 1 : 0.6 }]}>{icon}</Text>
-    </View>
+    <AnimatedView style={[styles.tabIconContainer, iconWrapStyle]}>
+      <AnimatedView
+        style={[
+          styles.activeIconCircle,
+          { backgroundColor: `${colors.safe}55` },
+          activeCircleStyle,
+        ]}
+      />
+      <Feather
+        name={iconName}
+        size={19}
+        color={focused ? colors.textPrimary : colors.iconMuted}
+      />
+    </AnimatedView>
   );
 };
 
 const MainTabs: React.FC = () => {
   const { t, zone } = useUser();
+  const { colors, isDark, tabShadow } = useAppTheme();
+  const tabBarStyle = React.useMemo(
+    () => [
+      styles.tabBar,
+      tabShadow,
+      {
+        backgroundColor: isDark ? '#111827D8' : '#FFFFFFE8',
+        borderColor: colors.border,
+      },
+    ],
+    [colors.border, isDark, tabShadow]
+  );
   
   return (
     <Tab.Navigator
@@ -48,14 +105,18 @@ const MainTabs: React.FC = () => {
         tabBarIcon: ({ focused, color }) => (
           <TabIcon name={route.name} focused={focused} color={color} />
         ),
-        tabBarActiveTintColor: '#0B4F6C',
-        tabBarInactiveTintColor: '#71787E',
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.textPrimary,
+        tabBarInactiveTintColor: colors.iconMuted,
+        tabBarStyle: tabBarStyle,
         tabBarLabelStyle: styles.tabBarLabel,
+        tabBarItemStyle: styles.tabBarItem,
         headerStyle: styles.header,
         headerTitleStyle: styles.headerTitle,
-        headerTintColor: '#fff',
+        headerTintColor: colors.textPrimary,
         headerTitleAlign: 'center',
+        tabBarBackground: () => (
+          <AnimatedBlurView intensity={20} tint={isDark ? 'dark' : 'light'} style={styles.tabBarBlur} />
+        ),
       })}
     >
       <Tab.Screen
@@ -96,15 +157,30 @@ const MainTabs: React.FC = () => {
 
 export const AppNavigator: React.FC = () => {
   const { isOnboarded, isFirstLaunch } = useUser();
+  const { colors } = useAppTheme();
+  const navigationTheme = React.useMemo(
+    () => ({
+      dark: false,
+      colors: {
+        primary: colors.safe,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        notification: colors.warning,
+      },
+    }),
+    [colors]
+  );
   console.log('[Navigator] isOnboarded:', isOnboarded, 'isFirstLaunch:', isFirstLaunch);
   
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: styles.header,
-          headerTitleStyle: styles.headerTitle,
-          headerTintColor: '#fff',
+          headerStyle: [styles.header, { backgroundColor: colors.background }],
+          headerTitleStyle: [styles.headerTitle, { color: colors.textPrimary }],
+          headerTintColor: colors.textPrimary,
           headerTitleAlign: 'center',
           headerBackTitleVisible: false,
         }}
@@ -129,35 +205,49 @@ export const AppNavigator: React.FC = () => {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#0B4F6C',
+    backgroundColor: 'transparent',
   },
   headerTitle: {
-    color: '#fff',
+    color: '#0F172A',
     fontWeight: '600',
     fontSize: 18,
   },
   tabBar: {
-    backgroundColor: '#fff',
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: Platform.OS === 'ios' ? 24 : 14,
+    borderRadius: 30,
     borderTopWidth: 0,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    height: Platform.OS === 'ios' ? 85 : 65,
-    paddingBottom: Platform.OS === 'ios' ? 25 : 8,
+    borderWidth: 1,
+    height: Platform.OS === 'ios' ? 76 : 70,
+    paddingBottom: Platform.OS === 'ios' ? 14 : 10,
     paddingTop: 8,
+    paddingHorizontal: 8,
+    overflow: 'hidden',
+  },
+  tabBarBlur: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 30,
+  },
+  tabBarItem: {
+    borderRadius: 22,
   },
   tabBarLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: Platform.OS === 'ios' ? 2 : 4,
   },
   tabIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabIcon: {
-    fontSize: 22,
+  activeIconCircle: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
   },
 });
 
