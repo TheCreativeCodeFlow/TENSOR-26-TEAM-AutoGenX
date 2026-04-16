@@ -36,7 +36,11 @@ const TabIcon: React.FC<{ name: string; focused: boolean; color: string }> = ({ 
       iconName = 'map';
       break;
     case 'Alerts':
-      iconName = 'bell';
+    case 'Toolkit':
+      iconName = 'navigation';
+      break;
+    case 'Compass':
+      iconName = 'compass';
       break;
     case 'Settings':
       iconName = 'settings';
@@ -136,10 +140,10 @@ const MainTabs: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Alerts"
+        name="Toolkit"
         component={AlertsScreen}
         options={{
-          title: t?.official_alerts || 'Alerts',
+          title: 'Toolkit',
           headerShown: false,
         }}
       />

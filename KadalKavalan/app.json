@@ -35,10 +35,11 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
+      "mlApiUrl": "https://tensor-26-team-autogenx-1.onrender.com",
       "eas": {
-        "projectId": "kadal-kavalan-app"
-      },
-      "mlApiUrl": "https://tensor-26-team-autogenx-1.onrender.com"
-    }
+        "projectId": "501995e9-8fe7-4bab-bb35-f209fc729005"
+      }
+    },
+    "owner": "toxic121123"
   }
 }

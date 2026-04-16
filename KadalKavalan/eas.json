@@ -1,0 +1,27 @@
+{
+  "cli": {
+    "version": ">= 9.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ML_API_URL": "https://tensor-26-team-autogenx-1.onrender.com",
+        "EXPO_PUBLIC_ML_ENABLED": "true"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_ML_API_URL": "https://tensor-26-team-autogenx-1.onrender.com",
+        "EXPO_PUBLIC_ML_ENABLED": "true"
+      }
+    }
+  }
+}

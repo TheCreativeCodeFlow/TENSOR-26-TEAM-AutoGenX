@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import MapView, { Marker, Circle, Polygon, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '../context/UserContext';
 import { fishingZones, FishingZone } from '../data/zones';
 import { fetchAllZonesWeather, calculateRiskScore, MarineWeatherData } from '../services/marineWeather';
+import { offshoreBoundary50km } from '../data/coastline';
 import * as Speech from 'expo-speech';
 import { useAppTheme } from '../theme';
 
@@ -475,6 +476,20 @@ const NauticalMapScreen: React.FC = () => {
         >
           {renderRiskCircles()}
           {renderZoneMarkers()}
+          
+          {/* 50km offshore boundary */}
+          {!useWebMapFallback && offshoreBoundary50km.length > 0 && (
+            <Polyline
+              coordinates={offshoreBoundary50km.map(coord => ({
+                latitude: coord[1],
+                longitude: coord[0],
+              }))}
+              strokeColor={colors.danger}
+              strokeWidth={2}
+              lineDashPattern={[5, 5]}
+              tappable={true}
+            />
+          )}
 
           {/* User location marker */}
           {userLocation && <Marker coordinate={userLocation} title="Your Location" pinColor="blue" />}
