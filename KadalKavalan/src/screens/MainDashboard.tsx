@@ -193,6 +193,34 @@ const MainDashboard: React.FC = () => {
   const [now, setNow] = useState<Date>(() => new Date());
   const theme = useAppTheme();
 
+  // Premium Voice Button Animations
+  const voicePulseAnim = useSharedValue(0);
+  const voiceScaleAnim = useSharedValue(1);
+
+  useEffect(() => {
+    if (speaking) {
+      voicePulseAnim.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1200, easing: Easing.out(Easing.ease) }),
+          withTiming(0, { duration: 1200, easing: Easing.in(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      voicePulseAnim.value = withTiming(0, { duration: 300 });
+    }
+  }, [speaking, voicePulseAnim]);
+
+  const voicePulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + voicePulseAnim.value * 0.5 }],
+    opacity: (1 - voicePulseAnim.value) * 0.6,
+  }));
+
+  const voiceBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: voiceScaleAnim.value }],
+  }));
+
   useEffect(() => {
     if (zone && boatClass) {
       fetchWeatherData(zone, boatClass);
@@ -451,12 +479,6 @@ const MainDashboard: React.FC = () => {
                   {zone?.name_en || 'Your Zone'}
                 </Text>
               </View>
-              <Pressable
-                style={[styles.voiceButton, { backgroundColor: theme.colors.surfaceSecondary, borderColor: theme.colors.border }]}
-                onPress={handleSpeak}
-              >
-                <Feather name={speaking ? 'volume-2' : 'volume-1'} size={18} color={theme.colors.textPrimary} />
-              </Pressable>
             </View>
 
             <Text style={[styles.heroStatusTitle, { color: theme.colors.textPrimary }]}>
@@ -654,6 +676,27 @@ const MainDashboard: React.FC = () => {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Premium Floating Voice Button */}
+      <View style={styles.floatingVoiceWrap}>
+        {speaking && (
+          <AnimatedView style={[StyleSheet.absoluteFill, styles.voicePulseRing, voicePulseStyle]} />
+        )}
+        <AnimatedPressable
+          style={[styles.floatingVoiceBtnInner, voiceBtnStyle]}
+          onPress={handleSpeak}
+          onPressIn={() => voiceScaleAnim.value = withTiming(0.92, { duration: 100 })}
+          onPressOut={() => voiceScaleAnim.value = withTiming(1, { duration: 150 })}
+        >
+          <LinearGradient
+            colors={theme.isDark ? ['rgba(22,163,74,0.3)', 'rgba(22,163,74,0.15)'] : ['#f0fdf4', '#dcfce7']}
+            style={[StyleSheet.absoluteFill, { borderRadius: 30 }]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+          <Feather name={speaking ? 'volume-2' : 'volume-1'} size={24} color={theme.isDark ? '#4ade80' : '#15803d'} style={styles.voiceIconShadow} />
+        </AnimatedPressable>
+      </View>
     </AnimatedView>
   );
 };
@@ -937,7 +980,6 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     marginTop: 14,
     borderWidth: 1,
-    backdropFilter: 'blur(12px)',
   },
   clockSkyCol: {
     alignItems: 'center',
@@ -982,6 +1024,36 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
     letterSpacing: 0.4,
+  },
+  floatingVoiceWrap: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 120 : 100,
+    right: 20,
+    width: 60,
+    height: 60,
+    zIndex: 99,
+  },
+  voicePulseRing: {
+    backgroundColor: '#22c55e',
+    borderRadius: 30,
+  },
+  floatingVoiceBtnInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dcfce7', // Ensures solid elevation casting on Android
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  voiceIconShadow: {
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
 });
 
