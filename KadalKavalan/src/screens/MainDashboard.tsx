@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -190,12 +190,19 @@ const MainDashboard: React.FC = () => {
   const { zoneData, isOffline, fetchWeatherData, lastFetched } = useWeather();
   const [refreshing, setRefreshing] = React.useState(false);
   const [speaking, setSpeaking] = React.useState(false);
+  const [now, setNow] = useState<Date>(() => new Date());
   const theme = useAppTheme();
 
   useEffect(() => {
     if (zone && boatClass) {
       fetchWeatherData(zone, boatClass);
     }
+  }, []);
+
+  // ─── Live clock — ticks every second ────────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const onRefresh = async () => {
@@ -379,6 +386,36 @@ const MainDashboard: React.FC = () => {
     ? ['#0B1222', '#0F172A']
     : ['#E2E8F0', '#F8FAFC'];
 
+  // ─── Sky icon: time + weather aware ────────────────────────────────────────────
+  const getSkyIcon = (): { icon: string; label: string } => {
+    const h    = now.getHours();
+    const wind = conditions?.wind_speed_kmh ?? 0;
+    const vis  = conditions?.visibility_km  ?? 10;
+    const lvl  = riskData?.risk_level ?? 'SAFE';
+    const isSevere = lvl === 'CYCLONE' || lvl === 'DANGER';
+    const isStormy = wind > 40 || vis < 3;
+    const isWindy  = wind > 20 || vis < 6;
+    const isCloudy = wind > 10 || vis < 8;
+    if (isSevere || isStormy)               return { icon: '🌩️', label: 'Storm Alert' };
+    if (isWindy && (h >= 20 || h < 5))      return { icon: '🌧️', label: 'Rainy Night' };
+    if (isWindy)                             return { icon: '🌦️', label: 'Rainy' };
+    if (isCloudy && h >= 5  && h < 7)       return { icon: '🌤️', label: 'Dawn Haze' };
+    if (isCloudy && h >= 7  && h < 18)      return { icon: '⛅',    label: 'Partly Cloudy' };
+    if (isCloudy && h >= 18 && h < 20)      return { icon: '🌥️', label: 'Cloudy Dusk' };
+    if (isCloudy)                            return { icon: '☁️',   label: 'Cloudy Night' };
+    if (h >= 5  && h < 7)                   return { icon: '🌅',   label: 'Sunrise' };
+    if (h >= 18 && h < 20)                  return { icon: '🌇',   label: 'Sunset' };
+    if (h >= 7  && h < 18)                  return { icon: '☀️',   label: 'Clear Day' };
+    return                                          { icon: '🌙',   label: 'Clear Night' };
+  };
+  const pad     = (n: number) => String(n).padStart(2, '0');
+  const hh      = now.getHours();
+  const ampm    = hh >= 12 ? 'PM' : 'AM';
+  const h12     = hh % 12 === 0 ? 12 : hh % 12;
+  const timeStr = `${pad(h12)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const sky     = getSkyIcon();
+
   return (
     <AnimatedView style={[styles.container, { backgroundColor: theme.colors.background }, screenAnimatedStyle]}>
       <ScrollView
@@ -428,6 +465,28 @@ const MainDashboard: React.FC = () => {
             <Text style={[styles.heroStatusSubtitle, { color: theme.colors.textSecondary }]}> 
               {riskData?.risk_level === 'SAFE' ? 'Conditions stable' : riskData?.reason_text || 'Conditions changing'}
             </Text>
+
+            {/* ─── Live Clock Widget ────────────────────────────────────────────────── */}
+            <View style={[
+              styles.clockWidget,
+              { backgroundColor: theme.isDark ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)',
+                borderColor: theme.isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }
+            ]}>
+              {/* Sky icon */}
+              <View style={styles.clockSkyCol}>
+                <Text style={styles.clockSkyIcon}>{sky.icon}</Text>
+                <Text style={[styles.clockSkyLabel, { color: theme.colors.textSecondary }]}>{sky.label}</Text>
+              </View>
+              <View style={[styles.clockDivider, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)' }]} />
+              {/* Time */}
+              <View style={styles.clockTimeCol}>
+                <View style={styles.clockTimeRow}>
+                  <Text style={[styles.clockTimeText, { color: theme.colors.textPrimary }]}>{timeStr}</Text>
+                  <Text style={[styles.clockAmPm, { color: theme.colors.textSecondary }]}>{ampm}</Text>
+                </View>
+                <Text style={[styles.clockDate, { color: theme.colors.textSecondary }]}>{dateStr}</Text>
+              </View>
+            </View>
 
             {lastFetched ? (
               <Text style={[styles.heroUpdated, { color: theme.colors.textSecondary }]}> 
@@ -868,6 +927,61 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 34,
+  },
+  // \u2500\u2500\u2500 Clock Widget \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  clockWidget: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    marginTop: 14,
+    borderWidth: 1,
+    backdropFilter: 'blur(12px)',
+  },
+  clockSkyCol: {
+    alignItems: 'center',
+    minWidth: 64,
+  },
+  clockSkyIcon: {
+    fontSize: 36,
+    marginBottom: 2,
+  },
+  clockSkyLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  },
+  clockDivider: {
+    width: 1,
+    height: 48,
+    marginHorizontal: 14,
+  },
+  clockTimeCol: {
+    flex: 1,
+  },
+  clockTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 5,
+  },
+  clockTimeText: {
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  clockAmPm: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  clockDate: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+    letterSpacing: 0.4,
   },
 });
 
