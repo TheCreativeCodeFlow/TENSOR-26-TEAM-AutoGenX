@@ -141,7 +141,8 @@ const SettingsScreen: React.FC = () => {
 
     if (value && whatsappNumber && whatsappNumber.length >= 10) {
       try {
-        const candidates = ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000'];
+        const configuredUrl = Constants.expoConfig?.extra?.mlApiUrl;
+        const candidates = configuredUrl ? [configuredUrl] : ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000'];
         let backendUrl = candidates[0];
         for (const url of candidates) {
           try {
@@ -183,7 +184,8 @@ const SettingsScreen: React.FC = () => {
       return;
     }
     try {
-      const candidates = ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000'];
+      const configuredUrl = Constants.expoConfig?.extra?.mlApiUrl;
+      const candidates = configuredUrl ? [configuredUrl] : ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000'];
       let backendUrl = candidates[0];
       for (const url of candidates) {
         try {

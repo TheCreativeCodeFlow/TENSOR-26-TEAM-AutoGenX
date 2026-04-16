@@ -63,7 +63,7 @@ function getMlApiCandidates(): string[] {
   return Array.from(new Set(candidates.map(stripTrailingSlash)));
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 3500): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 15000): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -87,7 +87,7 @@ async function resolveMLApiUrl(): Promise<string | null> {
 
   for (const baseUrl of candidates) {
     try {
-      const healthRes = await fetchWithTimeout(`${baseUrl}/health`, { method: 'GET' }, 2500);
+      const healthRes = await fetchWithTimeout(`${baseUrl}/health`, { method: 'GET' }, 10000);
       if (healthRes.ok) {
         resolvedMLApiUrl = baseUrl;
         console.log('[WeatherContext] ML backend resolved at:', baseUrl);
@@ -195,7 +195,7 @@ const callMLBackend = async (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(daySafetyRequest),
-    }, 5000);
+    }, 15000);
 
     if (!daySafetyRes.ok) {
       const errText = await daySafetyRes.text();
@@ -210,7 +210,7 @@ const callMLBackend = async (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(daySafetyRequest),
-    }, 5000);
+    }, 15000);
 
     let hourlyRisk: number[] = [];
     let safeWindow: { start: number; end: number } | null = null;
@@ -228,7 +228,7 @@ const callMLBackend = async (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(daySafetyRequest),
-    }, 5000);
+    }, 15000);
 
     if (returnTimeRes.ok) {
       returnTime = (await returnTimeRes.json()) as MLReturnTime;
