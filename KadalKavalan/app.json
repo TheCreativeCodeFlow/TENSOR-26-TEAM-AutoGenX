@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Kadal Kavalan",
+    "slug": "KadalKavalan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B4F6C"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kadalkavalan.app"
+    },
+    "android": {
+      "package": "com.kadalkavalan.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B4F6C"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "kadal-kavalan-app"
+      }
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "zones": [
+    {
+      "id": "TN-01"
+    },
+    {
+      "id": "TN-02"
+    },
+    {
+      "id": "TN-03"
+    },
+    {
+      "id": "TN-04"
+    },
+    {
+      "id": "KL-01"
+    },
+    {
+      "id": "KL-02"
+    },
+    {
+      "id": "KL-03"
+    },
+    {
+      "id": "AP-01"
+    },
+    {
+      "id": "AP-02"
+    },
+    {
+      "id": "OD-01"
+    },
+    {
+      "id": "OD-02"
+    }
+  ],
+  "feature_columns": [
+    "zone_encoded",
+    "boat_encoded",
+    "month",
+    "day",
+    "hour",
+    "wave_height",
+    "wind_speed",
+    "wind_gust",
+    "swell_height",
+    "visibility",
+    "weather_code",
+    "tide_encoded"
+  ],
+  "training_date": "2026-04-16T18:55:53.173522",
+  "model_type": "xgboost"
+}
