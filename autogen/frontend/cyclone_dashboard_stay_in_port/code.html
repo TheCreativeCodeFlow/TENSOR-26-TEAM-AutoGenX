@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CYCLONE COMMAND - System Status</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#694300",
+                    "tertiary-fixed-dim": "#ffb4ac",
+                    "on-background": "#1a1c1c",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface": "#f9f9f9",
+                    "secondary-fixed": "#ffddb5",
+                    "surface-variant": "#e2e2e2",
+                    "surface-container-high": "#e8e8e8",
+                    "primary": "#00450d",
+                    "surface-container-low": "#f3f3f3",
+                    "on-tertiary-fixed-variant": "#93000e",
+                    "on-error-container": "#93000a",
+                    "tertiary": "#7c000a",
+                    "on-secondary-fixed": "#2a1800",
+                    "on-tertiary-fixed": "#410003",
+                    "surface-container-highest": "#e2e2e2",
+                    "primary-fixed": "#acf4a4",
+                    "surface-container": "#eeeeee",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#ffb2aa",
+                    "on-primary-fixed": "#002203",
+                    "outline-variant": "#c0c9bb",
+                    "on-primary-fixed-variant": "#0c5216",
+                    "outline": "#717a6d",
+                    "on-surface-variant": "#41493e",
+                    "on-primary-container": "#90d689",
+                    "inverse-on-surface": "#f1f1f1",
+                    "surface-tint": "#2a6b2c",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed-dim": "#91d78a",
+                    "surface-dim": "#dadada",
+                    "on-surface": "#1a1c1c",
+                    "on-secondary-fixed-variant": "#643f00",
+                    "surface-bright": "#f9f9f9",
+                    "inverse-primary": "#91d78a",
+                    "tertiary-fixed": "#ffdad6",
+                    "secondary": "#835400",
+                    "secondary-fixed-dim": "#ffb957",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#a60a15",
+                    "inverse-surface": "#2f3131",
+                    "secondary-container": "#fcab28",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "background": "#f9f9f9",
+                    "primary-container": "#1b5e20"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "0px",
+                    "xl": "0px",
+                    "full": "0px"
+            },
+            "fontFamily": {
+                    "headline": ["Public Sans", "sans-serif"],
+                    "body": ["Public Sans", "sans-serif"],
+                    "label": ["Public Sans", "sans-serif"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Public Sans', sans-serif;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-[#7F0000] text-white font-public-sans font-bold uppercase tracking-tighter flex justify-between items-center w-full px-6 h-16 z-50">
+<div class="text-2xl font-black text-white">CYCLONE COMMAND</div>
+<div class="hidden md:flex items-center gap-8 h-full">
+<button class="text-white font-black border-b-4 border-white h-full px-4 flex items-center">DASHBOARD</button>
+<button class="text-white/70 hover:bg-[#7C000A] h-full px-4 flex items-center transition-colors">FLEET TRACKER</button>
+<button class="text-white/70 hover:bg-[#7C000A] h-full px-4 flex items-center transition-colors">SATELLITE DATA</button>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:bg-[#7C000A] p-2" data-icon="warning">warning</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-[#7C000A] p-2" data-icon="language">language</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-[#7C000A] p-2" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full w-64 bg-[#E2E2E2] text-[#00450D] font-public-sans font-bold text-lg border-r-0">
+<div class="p-6 space-y-1">
+<div class="text-[#7F0000] font-black text-sm uppercase mb-4 opacity-70">SYSTEM OPERATOR</div>
+<div class="text-xl font-black">OPERATOR ALPHA</div>
+<div class="text-sm opacity-60">Vessel ID: MAR-882</div>
+</div>
+<nav class="flex-1 mt-4">
+<button class="w-full flex items-center gap-4 px-6 py-4 bg-[#00450D] text-white transition-all">
+<span class="material-symbols-outlined" data-icon="radar">radar</span>
+<span>Live Radar</span>
+</button>
+<button class="w-full flex items-center gap-4 px-6 py-4 text-[#00450D] hover:bg-[#EEEEEE] transition-all">
+<span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+<span>Telemetry</span>
+</button>
+<button class="w-full flex items-center gap-4 px-6 py-4 text-[#00450D] hover:bg-[#EEEEEE] transition-all">
+<span class="material-symbols-outlined" data-icon="emergency">emergency</span>
+<span>Safety Protocol</span>
+</button>
+<button class="w-full flex items-center gap-4 px-6 py-4 text-[#00450D] hover:bg-[#EEEEEE] transition-all">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Crew Status</span>
+</button>
+<button class="w-full flex items-center gap-4 px-6 py-4 text-[#00450D] hover:bg-[#EEEEEE] transition-all">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Logbook</span>
+</button>
+</nav>
+<div class="p-4 border-t border-black/5 bg-[#EEEEEE]">
+<button class="w-full flex items-center gap-4 px-4 py-3 text-[#00450D] hover:bg-[#E2E2E2] text-sm">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</button>
+<button class="w-full flex items-center gap-4 px-4 py-3 text-[#00450D] hover:bg-[#E2E2E2] text-sm">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Support</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto bg-surface relative">
+<!-- Hero Warning Section -->
+<section class="bg-[#7F0000] p-8 md:p-12 text-white flex flex-col justify-end min-h-[409px] relative overflow-hidden">
+<div class="absolute top-0 right-0 p-8 opacity-10">
+<span class="material-symbols-outlined text-[12rem]" data-icon="cyclone">cyclone</span>
+</div>
+<div class="relative z-10">
+<div class="inline-block bg-white text-[#7F0000] px-4 py-1 font-black text-sm mb-4">CRITICAL ALERT LEVEL 5</div>
+<h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-none mb-4">CYCLONE — STAY IN PORT</h1>
+<p class="text-xl md:text-2xl font-bold opacity-90 max-w-2xl">
+                        SEVERE CYCLONIC STORM. ALL MARITIME ACTIVITIES PROHIBITED. <br/>
+                        தீவிர சூறாவளி புயல். அனைத்து கடல்சார் நடவடிக்கைகளும் தடைசெய்யப்பட்டுள்ளன.
+                    </p>
+</div>
+</section>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-b-0">
+<div class="bg-surface-container-highest p-8 flex flex-col justify-between h-64 border-r border-black/5">
+<div class="flex items-center gap-2 text-[#7F0000]">
+<span class="material-symbols-outlined" data-icon="air">air</span>
+<span class="font-bold text-sm uppercase tracking-widest">Wind Speed</span>
+</div>
+<div class="flex flex-col">
+<span class="text-7xl font-black text-on-surface">85+</span>
+<span class="text-xl font-bold opacity-50 uppercase">km/h</span>
+</div>
+</div>
+<div class="bg-surface-container p-8 flex flex-col justify-between h-64 border-r border-black/5">
+<div class="flex items-center gap-2 text-[#7F0000]">
+<span class="material-symbols-outlined" data-icon="tsunami">tsunami</span>
+<span class="font-bold text-sm uppercase tracking-widest">Wave Height</span>
+</div>
+<div class="flex flex-col">
+<span class="text-7xl font-black text-on-surface">4.0<span class="text-3xl">m+</span></span>
+<span class="text-xl font-bold opacity-50 uppercase">Significant Height</span>
+</div>
+</div>
+<div class="bg-surface-container-highest p-8 flex flex-col justify-between h-64">
+<div class="flex items-center gap-2 text-[#7F0000]">
+<span class="material-symbols-outlined" data-icon="visibility_off">visibility_off</span>
+<span class="font-bold text-sm uppercase tracking-widest">Visibility</span>
+</div>
+<div class="flex flex-col">
+<span class="text-7xl font-black text-on-surface">0.0</span>
+<span class="text-xl font-bold opacity-50 uppercase">Kilometers</span>
+</div>
+</div>
+</div>
+<!-- Detailed System Data / Bento Grid Style but Functional -->
+<div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Live Radar Snapshot -->
+<div class="md:col-span-8 bg-surface-container-low p-6 flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<h2 class="text-xl font-black uppercase text-primary">Live Radar Feed</h2>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-tertiary"></span>
+<span class="text-xs font-bold uppercase tracking-widest">Real-time tracking active</span>
+</div>
+</div>
+<div class="aspect-video w-full bg-black relative">
+<img alt="Weather radar" class="w-full h-full object-cover opacity-60 mix-blend-screen" data-alt="Digital weather radar interface with deep red cyclonic spiral patterns and green coastal outlines on a dark industrial background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOYFVg6BfWr_hHKhSV2oZFT14DXuifSFdpHUJaZHujhlZvqt_V9szjmm77BIG8h3iTzNv4UscIok3eFWWMyUBP83_l8BnXPi1ohVPtI7g6gogNoolGJGwHsCUwHPEupX3itKzzjbQzPVoMek7EqhoqgrExbwJf5ZazeqYwJyz_6OdAzCc160GlNkEEJAo8IIEZfe58ro5IlU-mS8d4sDeBYjaK_gFZrpVUA5Yt0OanulfJputhAKlahcfoML-9rfnOIxZHKfZ3OfIY"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-64 h-64 border-2 border-tertiary animate-pulse flex items-center justify-center">
+<span class="text-tertiary font-black text-xs">CYC-LOCK: CENTER T1.5</span>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 bg-black/80 px-3 py-2 border-l-4 border-tertiary">
+<p class="text-[10px] text-white font-mono uppercase">COORD: 13.0827° N, 80.2707° E</p>
+</div>
+</div>
+</div>
+<!-- Safety Protocol Checklist -->
+<div class="md:col-span-4 bg-surface-container-highest p-6 flex flex-col gap-6">
+<h2 class="text-xl font-black uppercase text-tertiary">Protocol Status</h2>
+<div class="space-y-4">
+<div class="flex items-start gap-4 p-4 bg-surface-container-lowest">
+<span class="material-symbols-outlined text-primary" data-icon="check_box" style="font-variation-settings: 'FILL' 1;">check_box</span>
+<div>
+<p class="font-bold text-sm leading-none">Vessel Anchored</p>
+<p class="text-xs opacity-60 mt-1">Confirmed by MAR-882 System</p>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 bg-surface-container-lowest">
+<span class="material-symbols-outlined text-primary" data-icon="check_box" style="font-variation-settings: 'FILL' 1;">check_box</span>
+<div>
+<p class="font-bold text-sm leading-none">External Hatches Sealed</p>
+<p class="text-xs opacity-60 mt-1">Pneumatic lock verified</p>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 bg-surface-container-lowest">
+<span class="material-symbols-outlined text-primary" data-icon="check_box" style="font-variation-settings: 'FILL' 1;">check_box</span>
+<div>
+<p class="font-bold text-sm leading-none">Aux Power Online</p>
+<p class="text-xs opacity-60 mt-1">Fuel levels at 92%</p>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 bg-tertiary-container text-white">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<div>
+<p class="font-bold text-sm leading-none">Crew Readiness</p>
+<p class="text-xs opacity-80 mt-1">MANDATORY QUARTERING IN EFFECT</p>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary text-white font-black py-4 uppercase text-sm tracking-widest hover:bg-primary-container transition-colors">
+                        BROADCAST SOS
+                    </button>
+</div>
+<!-- Marine Log Strip -->
+<div class="md:col-span-12 bg-surface-container-high p-4 flex flex-col gap-2">
+<div class="flex justify-between items-center px-2">
+<span class="text-[10px] font-black uppercase opacity-40">System Log — Timestamp 2024-05-24T08:12:44Z</span>
+<span class="text-[10px] font-black uppercase opacity-40 tracking-widest">Feed Status: SYNCHRONIZED</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+<div class="bg-surface-container-lowest p-3 border-l-4 border-secondary">
+<span class="text-[9px] font-bold text-secondary uppercase">08:10:22</span>
+<p class="text-xs font-bold truncate">Wind Gust detected at 104km/h</p>
+</div>
+<div class="bg-surface-container-lowest p-3 border-l-4 border-tertiary">
+<span class="text-[9px] font-bold text-tertiary uppercase">08:08:45</span>
+<p class="text-xs font-bold truncate">Wave height exceeded critical safety</p>
+</div>
+<div class="bg-surface-container-lowest p-3 border-l-4 border-primary">
+<span class="text-[9px] font-bold text-primary uppercase">08:05:12</span>
+<p class="text-xs font-bold truncate">System self-test: ALL OK</p>
+</div>
+<div class="bg-surface-container-lowest p-3 border-l-4 border-secondary">
+<span class="text-[9px] font-bold text-secondary uppercase">08:01:30</span>
+<p class="text-xs font-bold truncate">Barometric pressure: 948 hPa</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Warning Strip -->
+<div class="sticky bottom-0 bg-[#7F0000] h-12 flex items-center justify-center px-6 overflow-hidden">
+<div class="flex items-center gap-12 whitespace-nowrap">
+<span class="text-white font-black text-xs tracking-tighter uppercase flex items-center gap-2 italic">
+<span class="material-symbols-outlined text-sm" data-icon="priority_high">priority_high</span>
+                        DANGER: EXTREME SEA STATE
+                    </span>
+<span class="text-white font-black text-xs tracking-tighter uppercase flex items-center gap-2 italic">
+<span class="material-symbols-outlined text-sm" data-icon="priority_high">priority_high</span>
+                        EVACUATE COASTAL SECTORS
+                    </span>
+<span class="text-white font-black text-xs tracking-tighter uppercase flex items-center gap-2 italic">
+<span class="material-symbols-outlined text-sm" data-icon="priority_high">priority_high</span>
+                        STAY IN PORT
+                    </span>
+<span class="text-white font-black text-xs tracking-tighter uppercase flex items-center gap-2 italic hidden md:flex">
+<span class="material-symbols-outlined text-sm" data-icon="priority_high">priority_high</span>
+                        DANGER: EXTREME SEA STATE
+                    </span>
+<span class="text-white font-black text-xs tracking-tighter uppercase flex items-center gap-2 italic hidden lg:flex">
+<span class="material-symbols-outlined text-sm" data-icon="priority_high">priority_high</span>
+                        STAY IN PORT
+                    </span>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar for Mobile -->
+<nav class="md:hidden bg-[#E2E2E2] flex justify-around items-center h-16 border-t-0 text-[#00450D]">
+<button class="flex flex-col items-center justify-center gap-1 bg-[#00450D] text-white px-4 h-full">
+<span class="material-symbols-outlined" data-icon="radar">radar</span>
+<span class="text-[10px] font-bold uppercase">Radar</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 px-4 h-full">
+<span class="material-symbols-outlined" data-icon="emergency">emergency</span>
+<span class="text-[10px] font-bold uppercase">Safety</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 px-4 h-full">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="text-[10px] font-bold uppercase">Crew</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 px-4 h-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px] font-bold uppercase">Settings</span>
+</button>
+</nav>
+</body></html>

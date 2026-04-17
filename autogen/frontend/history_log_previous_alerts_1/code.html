@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sea Safety - History Log</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c0c9bb",
+                        "tertiary-fixed": "#ffdad6",
+                        "surface-dim": "#dadada",
+                        "secondary-fixed": "#ffddb5",
+                        "outline": "#717a6d",
+                        "on-tertiary-fixed-variant": "#93000e",
+                        "on-primary-fixed": "#002203",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#a60a15",
+                        "on-surface": "#1a1c1c",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e2e2e2",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb4ac",
+                        "surface-tint": "#2a6b2c",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#fcab28",
+                        "on-primary-container": "#90d689",
+                        "tertiary": "#7c000a",
+                        "on-primary-fixed-variant": "#0c5216",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#1b5e20",
+                        "surface-container": "#eeeeee",
+                        "on-surface-variant": "#41493e",
+                        "inverse-surface": "#2f3131",
+                        "inverse-on-surface": "#f1f1f1",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-container-highest": "#e2e2e2",
+                        "primary": "#00450d",
+                        "inverse-primary": "#91d78a",
+                        "on-tertiary-fixed": "#410003",
+                        "secondary-fixed-dim": "#ffb957",
+                        "on-background": "#1a1c1c",
+                        "surface-container-high": "#e8e8e8",
+                        "on-secondary-container": "#694300",
+                        "background": "#f9f9f9",
+                        "on-secondary-fixed-variant": "#643f00",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#acf4a4",
+                        "surface": "#f9f9f9",
+                        "surface-bright": "#f9f9f9",
+                        "primary-fixed-dim": "#91d78a",
+                        "on-secondary-fixed": "#2a1800",
+                        "secondary": "#835400",
+                        "on-tertiary-container": "#ffb2aa"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Public Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-[#F9F9F9] dark:bg-[#0A0A0A]">
+<div class="flex items-center gap-4">
+<span class="text-2xl font-black text-[#00450D] dark:text-[#FFFFFF] uppercase tracking-tight">SEA SAFETY</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex gap-4">
+<span class="text-[#7F7F7F] font-bold uppercase text-sm cursor-pointer hover:bg-[#E2E2E2] px-2 py-1 duration-75">Dashboard</span>
+<span class="text-[#00450D] border-b-4 border-[#00450D] font-bold uppercase text-sm cursor-pointer px-2 py-1 duration-75">History Log</span>
+<span class="text-[#7F7F7F] font-bold uppercase text-sm cursor-pointer hover:bg-[#E2E2E2] px-2 py-1 duration-75">Vessel Status</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-[#E2E2E2] duration-75"><span class="material-symbols-outlined">account_circle</span></button>
+<button class="p-2 hover:bg-[#E2E2E2] duration-75"><span class="material-symbols-outlined">settings</span></button>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-16 bottom-0 w-64 flex flex-col pt-8 bg-[#F3F3F3] dark:bg-[#121212] z-40">
+<div class="px-6 mb-8">
+<h2 class="text-[#00450D] font-black text-lg uppercase">OPERATOR 01</h2>
+<p class="text-[#00450D] text-xs font-bold opacity-70 uppercase">Vessel ID: SS-492</p>
+</div>
+<div class="flex flex-col flex-grow">
+<!-- Navigation Items -->
+<a class="flex items-center gap-3 px-6 py-4 text-[#00450D] hover:bg-[#E2E2E2] active:scale-95 duration-75 font-bold text-sm uppercase" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 bg-[#00450D] text-white active:scale-95 duration-75 font-bold text-sm uppercase" href="#">
+<span class="material-symbols-outlined">history</span>
+                History Log
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 text-[#00450D] hover:bg-[#E2E2E2] active:scale-95 duration-75 font-bold text-sm uppercase" href="#">
+<span class="material-symbols-outlined">directions_boat</span>
+                Vessel Status
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 text-[#00450D] hover:bg-[#E2E2E2] active:scale-95 duration-75 font-bold text-sm uppercase" href="#">
+<span class="material-symbols-outlined">warning</span>
+                Emergency
+            </a>
+</div>
+<div class="mt-auto border-t border-[#E2E2E2] py-4">
+<a class="flex items-center gap-3 px-6 py-4 text-[#00450D] hover:bg-[#E2E2E2] active:scale-95 duration-75 font-bold text-sm uppercase" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-8 pb-12">
+<div class="max-w-6xl mx-auto">
+<div class="mb-8">
+<h1 class="text-4xl font-black text-primary uppercase tracking-tighter">History Log</h1>
+<p class="text-sm font-bold text-secondary uppercase mt-2">Historical Alert Records — Marine Safety Protocol</p>
+</div>
+<!-- List of Alerts -->
+<div class="flex flex-col gap-4">
+<!-- Alert: Cyclone -->
+<div class="bg-surface-container-high flex min-h-[140px]">
+<div class="w-4 bg-[#7F0000] shrink-0"></div>
+<div class="flex-grow p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+<div class="col-span-1">
+<span class="block text-2xl font-black text-[#7F0000] uppercase leading-none">CYCLONE</span>
+<span class="block text-sm font-bold text-[#7F0000] mt-1">சூறாவளி</span>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Date &amp; Time</p>
+<p class="text-lg font-black uppercase leading-tight">14 OCT 2023</p>
+<p class="text-md font-bold leading-tight">04:20 PM</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Location Zone</p>
+<p class="text-lg font-black uppercase leading-tight">Bay of Bengal</p>
+<p class="text-md font-bold leading-tight italic">North East Sector</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4 bg-surface-container-highest p-3">
+<p class="text-xs font-black uppercase text-tertiary">Live Telemetry</p>
+<div class="flex justify-between items-end mt-1">
+<div>
+<p class="text-xl font-black leading-none">112 KM/H</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Wind / காற்று</p>
+</div>
+<div class="text-right">
+<p class="text-xl font-black leading-none">6.2M</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Waves / அலைகள்</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Alert: Danger -->
+<div class="bg-surface-container-high flex min-h-[140px]">
+<div class="w-4 bg-[#C62828] shrink-0"></div>
+<div class="flex-grow p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+<div class="col-span-1">
+<span class="block text-2xl font-black text-[#C62828] uppercase leading-none">DANGER</span>
+<span class="block text-sm font-bold text-[#C62828] mt-1">ஆபத்து</span>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Date &amp; Time</p>
+<p class="text-lg font-black uppercase leading-tight">12 OCT 2023</p>
+<p class="text-md font-bold leading-tight">09:15 AM</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Location Zone</p>
+<p class="text-lg font-black uppercase leading-tight">Palk Strait</p>
+<p class="text-md font-bold leading-tight italic">Shoal Region</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4 bg-surface-container-highest p-3">
+<p class="text-xs font-black uppercase text-tertiary">Live Telemetry</p>
+<div class="flex justify-between items-end mt-1">
+<div>
+<p class="text-xl font-black leading-none">45 KM/H</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Wind / காற்று</p>
+</div>
+<div class="text-right">
+<p class="text-xl font-black leading-none">2.5M</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Waves / அலைகள்</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Alert: Advisory -->
+<div class="bg-surface-container-high flex min-h-[140px]">
+<div class="w-4 bg-[#F9A825] shrink-0"></div>
+<div class="flex-grow p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+<div class="col-span-1">
+<span class="block text-2xl font-black text-[#835400] uppercase leading-none">ADVISORY</span>
+<span class="block text-sm font-bold text-[#835400] mt-1">ஆலோசனை</span>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Date &amp; Time</p>
+<p class="text-lg font-black uppercase leading-tight">11 OCT 2023</p>
+<p class="text-md font-bold leading-tight">02:30 PM</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Location Zone</p>
+<p class="text-lg font-black uppercase leading-tight">Rameswaram South</p>
+<p class="text-md font-bold leading-tight italic">Coastal Shelf</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4 bg-surface-container-highest p-3">
+<p class="text-xs font-black uppercase text-secondary">Live Telemetry</p>
+<div class="flex justify-between items-end mt-1">
+<div>
+<p class="text-xl font-black leading-none">28 KM/H</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Wind / காற்று</p>
+</div>
+<div class="text-right">
+<p class="text-xl font-black leading-none">1.2M</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Waves / அலைகள்</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Alert: Safe -->
+<div class="bg-surface-container-high flex min-h-[140px]">
+<div class="w-4 bg-[#1B5E20] shrink-0"></div>
+<div class="flex-grow p-6 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+<div class="col-span-1">
+<span class="block text-2xl font-black text-[#1B5E20] uppercase leading-none">SAFE</span>
+<span class="block text-sm font-bold text-[#1B5E20] mt-1">பாதுகாப்பானது</span>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Date &amp; Time</p>
+<p class="text-lg font-black uppercase leading-tight">10 OCT 2023</p>
+<p class="text-md font-bold leading-tight">11:00 AM</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4">
+<p class="text-xs font-bold text-outline uppercase">Location Zone</p>
+<p class="text-lg font-black uppercase leading-tight">Gulf of Mannar</p>
+<p class="text-md font-bold leading-tight italic">Open Waters</p>
+</div>
+<div class="col-span-1 border-l-4 border-surface-container-highest pl-4 bg-surface-container-highest p-3">
+<p class="text-xs font-black uppercase text-primary">Live Telemetry</p>
+<div class="flex justify-between items-end mt-1">
+<div>
+<p class="text-xl font-black leading-none">12 KM/H</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Wind / காற்று</p>
+</div>
+<div class="text-right">
+<p class="text-xl font-black leading-none">0.5M</p>
+<p class="text-[10px] font-bold uppercase opacity-60">Waves / அலைகள்</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination/Load More (Functionalist Style) -->
+<button class="w-full bg-surface-container-highest h-16 flex items-center justify-center font-black uppercase text-primary hover:bg-outline-variant duration-75">
+                    LOAD PREVIOUS RECORDS — கடந்த பதிவுகளை ஏற்றவும்
+                </button>
+</div>
+</div>
+<!-- Sidebar/Footer Context -->
+<div class="mt-12 flex justify-between items-center text-[10px] font-bold uppercase text-outline">
+<p>System Hash: 0xA492-HIST-LOG</p>
+<p>Export as PDF / CSV</p>
+<p>Last Sync: 15 OCT 2023 - 08:00 UTC</p>
+</div>
+</main>
+</body></html>

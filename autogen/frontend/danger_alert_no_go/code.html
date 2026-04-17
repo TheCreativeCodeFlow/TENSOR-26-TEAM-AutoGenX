@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SEA SAFETY - DANGER ALERT</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#643f00",
+                        "outline-variant": "#c0c9bb",
+                        "surface-container": "#eeeeee",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#410003",
+                        "on-primary-fixed-variant": "#0c5216",
+                        "surface-tint": "#2a6b2c",
+                        "primary": "#00450d",
+                        "surface-bright": "#f9f9f9",
+                        "tertiary-fixed": "#ffdad6",
+                        "inverse-on-surface": "#f1f1f1",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#ffb957",
+                        "outline": "#717a6d",
+                        "on-background": "#1a1c1c",
+                        "tertiary": "#7c000a",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary-container": "#90d689",
+                        "primary-container": "#1b5e20",
+                        "on-tertiary-fixed-variant": "#93000e",
+                        "tertiary-fixed-dim": "#ffb4ac",
+                        "on-surface": "#1a1c1c",
+                        "on-secondary-container": "#694300",
+                        "inverse-surface": "#2f3131",
+                        "on-tertiary-container": "#ffb2aa",
+                        "tertiary-container": "#a60a15",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffddb5",
+                        "on-secondary-fixed": "#2a1800",
+                        "on-surface-variant": "#41493e",
+                        "surface-variant": "#e2e2e2",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#fcab28",
+                        "secondary": "#835400",
+                        "surface-dim": "#dadada",
+                        "inverse-primary": "#91d78a",
+                        "on-error-container": "#93000a",
+                        "background": "#f9f9f9",
+                        "on-primary": "#ffffff",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#91d78a",
+                        "primary-fixed": "#acf4a4",
+                        "on-primary-fixed": "#002203",
+                        "surface": "#f9f9f9",
+                        "surface-container-highest": "#e2e2e2",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "0px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Public Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; background-color: #f9f9f9; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen text-on-surface">
+<!-- SideNavBar (Desktop Only) -->
+<aside class="hidden md:flex flex-col h-screen fixed left-0 top-0 z-40 bg-[#F3F3F3] dark:bg-slate-800 border-r-4 border-[#E2E2E2] dark:border-slate-700 w-64">
+<div class="px-6 py-8">
+<h1 class="text-xl font-black text-[#00450D] font-headline uppercase tracking-tighter">SEA SAFETY</h1>
+<div class="mt-8 flex items-center gap-3">
+<div class="w-12 h-12 bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">call_log</span>
+</div>
+<div>
+<div class="font-bold text-lg leading-tight uppercase">VESSEL ALPHA</div>
+<div class="text-sm font-bold opacity-70 uppercase">ID: 9921-X</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-4 px-4 py-4 bg-[#00450D] text-white transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-bold text-lg">Safety</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-4 text-slate-700 hover:bg-[#E2E2E2] transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="storm">storm</span>
+<span class="font-bold text-lg">Weather</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-4 text-slate-700 hover:bg-[#E2E2E2] transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="font-bold text-lg">Alerts</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-4 text-slate-700 hover:bg-[#E2E2E2] transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-bold text-lg">Map</span>
+</a>
+</nav>
+<div class="p-4">
+<button class="w-full bg-tertiary text-white py-6 font-black text-xl flex items-center justify-center gap-2 hover:bg-tertiary-container transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emergency</span>
+                EMERGENCY SOS
+            </button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 mb-16 md:mb-0">
+<!-- TopAppBar -->
+<header class="bg-[#F9F9F9] dark:bg-slate-900 flex justify-between items-center w-full px-6 py-4 max-w-none">
+<div class="text-2xl font-black text-[#00450D] dark:text-emerald-500 font-headline uppercase tracking-tighter">
+                SEA SAFETY
+            </div>
+<div class="flex gap-4">
+<button class="p-2 hover:bg-[#E2E2E2] dark:hover:bg-slate-700 text-[#00450D]">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</button>
+<button class="p-2 hover:bg-[#E2E2E2] dark:hover:bg-slate-700 text-[#00450D]">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+</button>
+</div>
+</header>
+<!-- Separation Line -->
+<div class="bg-[#E8E8E8] dark:bg-slate-800 h-[4px] w-full"></div>
+<!-- Offline Banner -->
+<div class="bg-secondary text-white px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="cloud_off">cloud_off</span>
+<span class="font-bold text-sm uppercase tracking-wider">OFFLINE MODE — Showing data from 2 mins ago</span>
+</div>
+<span class="text-sm font-black">14:02 GMT</span>
+</div>
+<div class="p-6 md:p-8 space-y-6">
+<!-- Hero Risk Card -->
+<div class="bg-tertiary text-white p-8 border-l-[12px] border-on-tertiary-fixed-variant">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div>
+<h2 class="text-5xl md:text-7xl font-black tracking-tighter leading-none">DANGER — NO GO</h2>
+<p class="mt-4 text-2xl font-bold opacity-90">SEA ENTRY IS STRICTLY PROHIBITED</p>
+</div>
+<span class="material-symbols-outlined text-8xl md:text-9xl opacity-40" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+<!-- Bento Layout Content -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Weather Metrics -->
+<div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-high p-6 flex flex-col justify-between">
+<span class="font-black text-sm text-outline uppercase tracking-widest">Wind Speed</span>
+<div class="flex items-baseline gap-2 mt-4">
+<span class="text-6xl font-black text-tertiary">45</span>
+<span class="text-2xl font-bold">KM/H</span>
+</div>
+<span class="material-symbols-outlined text-tertiary mt-2" data-icon="air">air</span>
+</div>
+<div class="bg-surface-container-high p-6 flex flex-col justify-between">
+<span class="font-black text-sm text-outline uppercase tracking-widest">Wave Height</span>
+<div class="flex items-baseline gap-2 mt-4">
+<span class="text-6xl font-black text-tertiary">2.5</span>
+<span class="text-2xl font-bold">M</span>
+</div>
+<span class="material-symbols-outlined text-tertiary mt-2" data-icon="tsunami">tsunami</span>
+</div>
+<div class="bg-surface-container-high p-6 flex flex-col justify-between">
+<span class="font-black text-sm text-outline uppercase tracking-widest">Visibility</span>
+<div class="flex items-baseline gap-2 mt-4">
+<span class="text-6xl font-black text-secondary">2</span>
+<span class="text-2xl font-bold">KM</span>
+</div>
+<span class="material-symbols-outlined text-secondary mt-2" data-icon="visibility_off">visibility_off</span>
+</div>
+</div>
+<!-- Immediate Return Status -->
+<div class="bg-surface-container-lowest p-6 flex flex-col justify-center items-center text-center border-4 border-tertiary">
+<span class="material-symbols-outlined text-tertiary text-6xl mb-4" data-icon="keyboard_return">keyboard_return</span>
+<h3 class="text-2xl font-black text-tertiary leading-tight uppercase">IMMEDIATE RETURN REQUIRED</h3>
+<p class="mt-2 font-bold text-on-surface-variant">Vessels currently at sea must head to the nearest port immediately.</p>
+</div>
+<!-- Alert Message Section -->
+<div class="lg:col-span-2 bg-tertiary-container text-white p-8 flex gap-6 items-start">
+<button class="bg-white text-tertiary p-6 hover:bg-surface-container-lowest transition-colors active:scale-95">
+<span class="material-symbols-outlined text-5xl" data-icon="volume_up" style="font-variation-settings: 'FILL' 1;">volume_up</span>
+</button>
+<div class="space-y-4">
+<div class="text-3xl font-black leading-tight">
+                            High waves and strong winds. DO NOT go to sea.
+                        </div>
+<div class="text-4xl font-bold leading-tight border-t border-white/20 pt-4">
+                            அலைகள் அதிகம், பலத்த காற்று வீசுகிறது. கடலுக்கு செல்ல வேண்டாம்.
+                        </div>
+</div>
+</div>
+<!-- Map Section -->
+<div class="bg-surface-container-high h-full min-h-[300px] relative overflow-hidden">
+<div class="absolute inset-0 bg-slate-300" data-alt="minimalist satellite map of a coastline showing dark navy water and beige land with large translucent red rectangles over sea areas" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDHcO2js0e3kkbeKTu2P3GpSDJeN5JkYHUr2jeGNrumse2sn4qJo9Mz748jZREzF77YmZjGfYDEuNOdCCca_NdXjseuGd6RZCb740ZdMof-fEIHfm_LTZPu1vU_U0mTHTP5HlVQybBKuJ-AqzcFvgLSazfVo4nVZfuF407wciVjtogqUCDQHn_gbPd47yT1GJoomeTiK6sg26DsH1PunRfV5o-WD2wpELQQRN1pmOhZ5-2ySm2cajYW_urZZMKBEk8_-RQ5oDtDq5ky'); background-size: cover; background-position: center;"></div>
+<!-- Danger Zone Overlays -->
+<div class="absolute inset-0 bg-tertiary/40 mix-blend-multiply"></div>
+<div class="absolute top-1/2 left-1/4 w-32 h-32 bg-tertiary/60 border-2 border-white flex items-center justify-center">
+<span class="font-black text-white text-xs text-center px-2">DANGER ZONE 01</span>
+</div>
+<div class="absolute top-1/4 right-1/4 w-48 h-48 bg-tertiary/60 border-2 border-white flex items-center justify-center">
+<span class="font-black text-white text-xs text-center px-2">DANGER ZONE 02</span>
+</div>
+<!-- Legend -->
+<div class="absolute bottom-4 left-4 bg-surface-container-lowest p-3 shadow-lg">
+<div class="flex items-center gap-2">
+<div class="w-4 h-4 bg-tertiary"></div>
+<span class="text-xs font-black uppercase">Restricted Area</span>
+</div>
+</div>
+<div class="absolute top-4 right-4">
+<button class="bg-surface-container-lowest p-2 text-primary font-black flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="zoom_out_map">zoom_out_map</span>
+                            FULL MAP
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe md:hidden bg-[#FFFFFF] dark:bg-slate-900 border-t-4 border-[#E2E2E2] dark:border-slate-800">
+<a class="flex flex-col items-center justify-center bg-[#E2E2E2] dark:bg-slate-700 text-[#00450D] dark:text-emerald-400 p-4 w-full active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-['Public_Sans'] font-bold text-[10px] uppercase mt-1">Safety</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-4 w-full active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="storm">storm</span>
+<span class="font-['Public_Sans'] font-bold text-[10px] uppercase mt-1">Weather</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-4 w-full active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="font-['Public_Sans'] font-bold text-[10px] uppercase mt-1">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-4 w-full active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-['Public_Sans'] font-bold text-[10px] uppercase mt-1">Map</span>
+</a>
+</nav>
+</body></html>
