@@ -38,11 +38,16 @@ const JOURNEY_LOG_INTERVAL_MS = 10 * 60 * 1000;
 const MAX_JOURNEY_LOGS = 144;
 const MAX_JOURNEY_SUMMARIES = 10;
 const HEADING_SMOOTHING_ALPHA = 0.2;
+const HEADING_FILTER_WINDOW = 5;
+const HEADING_JITTER_DEADBAND_DEG = 3;
+const HEADING_UI_UPDATE_INTERVAL_MS = 120;
+const HEADING_FORCE_UPDATE_DEG = 10;
 const KM_PER_KNOT = 1.852;
 
 interface JourneySample {
   heading: number;
   windSpeed: number;
+  windDirection: number;
   timestamp: number;
 }
 
@@ -112,9 +117,29 @@ function circularMeanHeading(samples: JourneySample[]): number {
   return normalizeHeading((Math.atan2(sumY, sumX) * 180) / Math.PI);
 }
 
-function smoothCircularHeading(previousHeading: number, newHeading: number): number {
-  const delta = ((newHeading - previousHeading + 540) % 360) - 180;
-  return ((previousHeading + delta * HEADING_SMOOTHING_ALPHA) % 360 + 360) % 360;
+function circularMeanAngles(angles: number[]): number {
+  if (angles.length === 0) {
+    return 0;
+  }
+
+  let sumX = 0;
+  let sumY = 0;
+  angles.forEach((angle) => {
+    const radians = toRadians(angle);
+    sumX += Math.cos(radians);
+    sumY += Math.sin(radians);
+  });
+
+  return normalizeHeading((Math.atan2(sumY, sumX) * 180) / Math.PI);
+}
+
+function shortestHeadingDelta(from: number, to: number): number {
+  return ((to - from + 540) % 360) - 180;
+}
+
+function smoothCircularHeading(previousHeading: number, newHeading: number, alpha = HEADING_SMOOTHING_ALPHA): number {
+  const delta = shortestHeadingDelta(previousHeading, newHeading);
+  return ((previousHeading + delta * alpha) % 360 + 360) % 360;
 }
 
 function estimateReturnHours(distanceKm: number, boatClass: string, windSpeedKmh: number): number {
@@ -242,11 +267,15 @@ const AlertsScreen: React.FC = () => {
   const [journeySummaries, setJourneySummaries] = useState<JourneySummary[]>([]);
 
   const headingRef = useRef(0);
+  const displayedHeadingRef = useRef(0);
+  const lastHeadingUiUpdateRef = useRef(0);
   const headingSmoothingRef = useRef<number | null>(null);
+  const headingSamplesRef = useRef<number[]>([]);
   const journeyDataRef = useRef<JourneyData | null>(null);
   const journeyActiveRef = useRef(false);
   const journeySummariesRef = useRef<JourneySummary[]>([]);
   const windSpeedRef = useRef(0);
+  const windDirectionRef = useRef(0);
   const boatClassRef = useRef(boatClass);
 
   const locationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -259,6 +288,12 @@ const AlertsScreen: React.FC = () => {
   useEffect(() => {
     windSpeedRef.current =
       Math.round(zoneData?.current_conditions.wind_speed_kmh ?? zoneData?.risk_assessment.conditions.wind_speed ?? 0);
+  }, [zoneData]);
+
+  useEffect(() => {
+    windDirectionRef.current = normalizeHeading(
+      zoneData?.current_conditions.wind_direction_deg ?? 0
+    );
   }, [zoneData]);
 
   useEffect(() => {
@@ -287,16 +322,47 @@ const AlertsScreen: React.FC = () => {
 
         headingSubscriptionRef.current = await Location.watchHeadingAsync((headingUpdate) => {
           const rawHeading = headingUpdate.trueHeading >= 0 ? headingUpdate.trueHeading : headingUpdate.magHeading;
-          const normalizedHeading = normalizeHeading(rawHeading);
-          if (headingSmoothingRef.current === null) {
-            headingSmoothingRef.current = normalizedHeading;
-          } else {
-            headingSmoothingRef.current = smoothCircularHeading(headingSmoothingRef.current, normalizedHeading);
+          if (!Number.isFinite(rawHeading) || rawHeading < 0) {
+            return;
           }
 
-          const smoothedHeading = normalizeHeading(headingSmoothingRef.current ?? normalizedHeading);
+          const normalizedHeading = normalizeHeading(rawHeading);
+
+          headingSamplesRef.current = [
+            ...headingSamplesRef.current.slice(-(HEADING_FILTER_WINDOW - 1)),
+            normalizedHeading,
+          ];
+          const filteredHeading = circularMeanAngles(headingSamplesRef.current);
+
+          if (headingSmoothingRef.current === null) {
+            headingSmoothingRef.current = filteredHeading;
+          } else {
+            const delta = shortestHeadingDelta(headingSmoothingRef.current, filteredHeading);
+            if (Math.abs(delta) < HEADING_JITTER_DEADBAND_DEG) {
+              return;
+            }
+
+            const adaptiveAlpha = Math.min(0.35, Math.max(0.08, Math.abs(delta) / 80));
+            headingSmoothingRef.current = smoothCircularHeading(
+              headingSmoothingRef.current,
+              filteredHeading,
+              adaptiveAlpha
+            );
+          }
+
+          const smoothedHeading = normalizeHeading(headingSmoothingRef.current ?? filteredHeading);
           headingRef.current = smoothedHeading;
-          setHeading(smoothedHeading);
+
+          const now = Date.now();
+          const displayDelta = Math.abs(shortestHeadingDelta(displayedHeadingRef.current, smoothedHeading));
+          if (
+            displayDelta >= HEADING_FORCE_UPDATE_DEG ||
+            now - lastHeadingUiUpdateRef.current >= HEADING_UI_UPDATE_INTERVAL_MS
+          ) {
+            displayedHeadingRef.current = smoothedHeading;
+            lastHeadingUiUpdateRef.current = now;
+            setHeading(smoothedHeading);
+          }
         });
 
         startLocationTracking();
@@ -326,6 +392,7 @@ const AlertsScreen: React.FC = () => {
               .map((entry) => ({
                 heading: normalizeHeading(Number(entry.heading) || 0),
                 windSpeed: Math.round(Number(entry.windSpeed) || 0),
+                windDirection: normalizeHeading(Number(entry.windDirection) || 0),
                 timestamp: Number(entry.timestamp) || Date.now(),
               }))
               .sort((a, b) => a.timestamp - b.timestamp)
@@ -426,7 +493,7 @@ const AlertsScreen: React.FC = () => {
     await AsyncStorage.removeItem(JOURNEY_STORAGE_KEY);
   };
 
-  const appendJourneyLog = async (windSpeedKmh: number) => {
+  const appendJourneyLog = async (windSpeedKmh: number, windDirectionDeg: number) => {
     const activeJourney = journeyDataRef.current;
     if (!journeyActiveRef.current || !activeJourney) {
       return;
@@ -442,6 +509,7 @@ const AlertsScreen: React.FC = () => {
     const nextEntry: JourneySample = {
       heading: normalizeHeading(headingRef.current),
       windSpeed: Math.round(windSpeedKmh),
+      windDirection: normalizeHeading(windDirectionDeg),
       timestamp: now,
     };
 
@@ -467,7 +535,8 @@ const AlertsScreen: React.FC = () => {
         setDistanceFromCoast(Math.round(zoneResult.distance));
 
         const latestWindSpeed = windSpeedRef.current;
-        await appendJourneyLog(latestWindSpeed);
+        const latestWindDirection = windDirectionRef.current;
+        await appendJourneyLog(latestWindSpeed, latestWindDirection);
 
         // Estimate return time from current sea state and boat class.
         const time = estimateReturnHours(zoneResult.distance, boatClassRef.current, latestWindSpeed);
@@ -484,6 +553,11 @@ const AlertsScreen: React.FC = () => {
   const getCompassDirection = (angle: number): string => {
     const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     return dirs[Math.round(angle / 45) % 8];
+  };
+
+  const getDirectionArrow = (angle: number): string => {
+    const arrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
+    return arrows[Math.round(normalizeHeading(angle) / 45) % 8];
   };
 
   const getRiskColor = () => {
@@ -509,6 +583,7 @@ const AlertsScreen: React.FC = () => {
       
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const initialWindSpeed = windSpeedRef.current;
+      const initialWindDirection = windDirectionRef.current;
       
       const newJourneyData: JourneyData = {
         startTime: Date.now(),
@@ -517,6 +592,7 @@ const AlertsScreen: React.FC = () => {
         headingHistory: [{
           heading: normalizeHeading(headingRef.current),
           windSpeed: Math.round(initialWindSpeed),
+          windDirection: normalizeHeading(initialWindDirection),
           timestamp: Date.now(),
         }],
       };
@@ -529,7 +605,7 @@ const AlertsScreen: React.FC = () => {
       
       Alert.alert(
         'Journey Started 🛥️',
-        'Heading, wind, and time logging has started. New logs are saved every 10 minutes.\n\nWhen you tap "End Journey", the app shows the overall return direction.',
+        'Heading, wind speed, wind direction, and time logging has started. New logs are saved every 10 minutes.\n\nWhen you tap "End Journey", the app shows the overall return direction.',
         [{ text: 'OK' }]
       );
     } catch (e) {
@@ -709,20 +785,23 @@ const AlertsScreen: React.FC = () => {
                   .reverse()
                   .map((entry, index) => (
                     <View key={`${entry.timestamp}-${index}`} style={styles.logRow}>
-                      <Text style={[styles.logCell, { color: theme.colors.textSecondary }]}>
+                      <Text style={[styles.logCell, styles.logTimeCell, { color: theme.colors.textSecondary }]}>
                         {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </Text>
-                      <Text style={[styles.logCell, { color: theme.colors.textPrimary }]}>
+                      <Text style={[styles.logCell, styles.logHeadingCell, { color: theme.colors.textPrimary }]}>
                         {entry.heading}° {getCompassDirection(entry.heading)}
                       </Text>
-                      <Text style={[styles.logCell, { color: theme.colors.textSecondary, textAlign: 'right' }]}>
+                      <Text style={[styles.logCell, styles.logWindCell, { color: theme.colors.textSecondary }]}>
                         {Math.round(entry.windSpeed)} km/h
+                      </Text>
+                      <Text style={[styles.logCell, styles.logDirectionCell, { color: theme.colors.textSecondary }]}>
+                        {getDirectionArrow(entry.windDirection)} {entry.windDirection}° {getCompassDirection(entry.windDirection)}
                       </Text>
                     </View>
                   ))
               ) : (
                 <Text style={[styles.logEmpty, { color: theme.colors.textSecondary }]}> 
-                  Start a journey to record heading, wind speed, and time every 10 minutes.
+                  Start a journey to record heading, wind speed, wind direction, and time every 10 minutes.
                 </Text>
               )}
             </View>
@@ -894,6 +973,10 @@ const styles = StyleSheet.create({
   logTitle: { fontSize: 12, fontWeight: '700', marginBottom: 8 },
   logRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5 },
   logCell: { flex: 1, fontSize: 12, fontWeight: '500' },
+  logTimeCell: { flex: 0.95 },
+  logHeadingCell: { flex: 1 },
+  logWindCell: { flex: 0.95, textAlign: 'right' },
+  logDirectionCell: { flex: 1.15, textAlign: 'right' },
   logEmpty: { fontSize: 12, lineHeight: 18 },
   journeyButtons: { width: '100%' },
   journeyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14 },
