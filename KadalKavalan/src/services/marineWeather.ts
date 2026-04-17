@@ -7,6 +7,35 @@ const OPEN_METEO_MARINE = 'https://marine-api.open-meteo.com/v1/marine';
 const OPEN_METEO_WEATHER = 'https://api.open-meteo.com/v1/forecast';
 const REQUEST_TIMEOUT_MS = 7000;
 
+const MARINE_HOURLY_FIELDS =
+  'wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction';
+const WEATHER_CURRENT_FIELDS =
+  'wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code,visibility';
+const WEATHER_HOURLY_FIELDS = 'wind_speed_10m,wind_gusts_10m,visibility,weather_code';
+
+function getHourlyValue(hourly: Record<string, unknown>, keys: string[], index: number): number {
+  for (const key of keys) {
+    const series = (hourly as Record<string, unknown>)[key];
+    if (Array.isArray(series)) {
+      const value = Number(series[index]);
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+  }
+  return 0;
+}
+
+function getCurrentValue(current: Record<string, unknown>, keys: string[]): number {
+  for (const key of keys) {
+    const value = Number((current as Record<string, unknown>)[key]);
+    if (Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return 0;
+}
+
 async function fetchJsonWithTimeout<T>(url: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -53,11 +82,11 @@ export const fetchMarineWeather = async (zone: FishingZone): Promise<MarineWeath
   
   try {
     // Marine data - use hourly first to get the latest hour
-    const marineUrl = `${OPEN_METEO_MARINE}?latitude=${centroid_lat}&longitude=${centroid_lon}&hourly=wave_height,wave_direction,wave_period,swell_height,swell_direction&timezone=auto`;
+    const marineUrl = `${OPEN_METEO_MARINE}?latitude=${centroid_lat}&longitude=${centroid_lon}&hourly=${MARINE_HOURLY_FIELDS}&timezone=auto`;
     const marineJson = await fetchJsonWithTimeout<{ hourly?: Record<string, unknown> }>(marineUrl);
     
     // Weather data
-    const weatherUrl = `${OPEN_METEO_WEATHER}?latitude=${centroid_lat}&longitude=${centroid_lon}&current=windspeed_10m,winddirection_10m,windgusts_10m,weathercode,visibility&hourly=windspeed_10m,windgusts_10m,weathercode,visibility&timezone=auto`;
+    const weatherUrl = `${OPEN_METEO_WEATHER}?latitude=${centroid_lat}&longitude=${centroid_lon}&current=${WEATHER_CURRENT_FIELDS}&hourly=${WEATHER_HOURLY_FIELDS}&timezone=auto`;
     const weatherJson = await fetchJsonWithTimeout<{ current?: Record<string, unknown> }>(weatherUrl);
     
     // Get latest hourly wave data
@@ -75,16 +104,20 @@ export const fetchMarineWeather = async (zone: FishingZone): Promise<MarineWeath
     const wavePeriod = Array.isArray((hourly as { wave_period?: unknown[] }).wave_period)
       ? Number((hourly as { wave_period?: unknown[] }).wave_period?.[latestIdx]) || 0
       : 0;
-    const swellHeight = Array.isArray((hourly as { swell_height?: unknown[] }).swell_height)
-      ? Number((hourly as { swell_height?: unknown[] }).swell_height?.[latestIdx]) || 0
-      : 0;
-    const swellDirection = Array.isArray((hourly as { swell_direction?: unknown[] }).swell_direction)
-      ? Number((hourly as { swell_direction?: unknown[] }).swell_direction?.[latestIdx]) || 0
-      : 0;
+    const swellHeight = getHourlyValue(hourly, ['swell_wave_height', 'swell_height'], latestIdx);
+    const swellDirection = getHourlyValue(
+      hourly,
+      ['swell_wave_direction', 'swell_direction'],
+      latestIdx
+    );
     
     const weatherCurrent = weatherJson.current || {};
+    const windSpeed = getCurrentValue(weatherCurrent, ['wind_speed_10m', 'windspeed_10m']);
+    const windDirection = getCurrentValue(weatherCurrent, ['wind_direction_10m', 'winddirection_10m']);
+    const windGust = getCurrentValue(weatherCurrent, ['wind_gusts_10m', 'windgusts_10m']);
+    const weatherCode = getCurrentValue(weatherCurrent, ['weather_code', 'weathercode']);
     
-    console.log('[API] Got', id, '- wave:', waveHeight?.toFixed(1), 'm, wind:', weatherCurrent.windspeed_10m?.toFixed(0), 'km/h');
+    console.log('[API] Got', id, '- wave:', waveHeight.toFixed(1), 'm, wind:', windSpeed.toFixed(0), 'km/h');
     
     return {
       wave_height: waveHeight || 0,
@@ -92,11 +125,11 @@ export const fetchMarineWeather = async (zone: FishingZone): Promise<MarineWeath
       wave_period: wavePeriod || 0,
       swell_height: swellHeight || 0,
       swell_direction: swellDirection || 0,
-      wind_speed: Number((weatherCurrent as { windspeed_10m?: unknown }).windspeed_10m) || 0,
-      wind_direction: Number((weatherCurrent as { winddirection_10m?: unknown }).winddirection_10m) || 0,
-      wind_gust: Number((weatherCurrent as { windgusts_10m?: unknown }).windgusts_10m) || 0,
+      wind_speed: windSpeed || 0,
+      wind_direction: windDirection || 0,
+      wind_gust: windGust || 0,
       visibility: Number((weatherCurrent as { visibility?: unknown }).visibility) || 10000,
-      weather_code: Number((weatherCurrent as { weathercode?: unknown }).weathercode) || 0,
+      weather_code: weatherCode || 0,
     };
   } catch (error) {
     console.error('[API] Error for', id, ':', error);
@@ -109,8 +142,8 @@ export const fetchMarineForecast = async (zone: FishingZone): Promise<MarineFore
   const { centroid_lat, centroid_lon } = zone;
   
   try {
-    const marineUrl = `${OPEN_METEO_MARINE}?latitude=${centroid_lat}&longitude=${centroid_lon}&hourly=wave_height,wave_direction,swell_height,swell_direction&forecast_days=2&timezone=auto`;
-    const weatherUrl = `${OPEN_METEO_WEATHER}?latitude=${centroid_lat}&longitude=${centroid_lon}&hourly=windspeed_10m,windgusts_10m,visibility&forecast_days=2&timezone=auto`;
+    const marineUrl = `${OPEN_METEO_MARINE}?latitude=${centroid_lat}&longitude=${centroid_lon}&hourly=wave_height,wave_direction,swell_wave_height,swell_wave_direction&forecast_days=2&timezone=auto`;
+    const weatherUrl = `${OPEN_METEO_WEATHER}?latitude=${centroid_lat}&longitude=${centroid_lon}&hourly=wind_speed_10m,wind_gusts_10m,visibility&forecast_days=2&timezone=auto`;
 
     const [marineJson, weatherJson] = await Promise.all([
       fetchJsonWithTimeout<{ hourly?: Record<string, unknown> }>(marineUrl),
@@ -127,9 +160,9 @@ export const fetchMarineForecast = async (zone: FishingZone): Promise<MarineFore
       time,
       wave_height: Number((marineHourly as { wave_height?: unknown[] }).wave_height?.[i]) || 0,
       wave_direction: Number((marineHourly as { wave_direction?: unknown[] }).wave_direction?.[i]) || 0,
-      swell_height: Number((marineHourly as { swell_height?: unknown[] }).swell_height?.[i]) || 0,
-      wind_speed: Number((weatherHourly as { windspeed_10m?: unknown[] }).windspeed_10m?.[i]) || 0,
-      wind_gust: Number((weatherHourly as { windgusts_10m?: unknown[] }).windgusts_10m?.[i]) || 0,
+      swell_height: getHourlyValue(marineHourly, ['swell_wave_height', 'swell_height'], i),
+      wind_speed: getHourlyValue(weatherHourly, ['wind_speed_10m', 'windspeed_10m'], i),
+      wind_gust: getHourlyValue(weatherHourly, ['wind_gusts_10m', 'windgusts_10m'], i),
     }));
     
     return { hourly };

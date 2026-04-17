@@ -58,12 +58,16 @@ export interface WeatherForecast {
   longitude: number;
   hourly: {
     time: string[];
-    windspeed_10m: number[];
-    winddirection_10m: number[];
-    windgusts_10m: number[];
+    wind_speed_10m?: number[];
+    wind_direction_10m?: number[];
+    wind_gusts_10m?: number[];
+    windspeed_10m?: number[];
+    winddirection_10m?: number[];
+    windgusts_10m?: number[];
     visibility: number[];
     precipitation: number[];
-    weathercode: number[];
+    weather_code?: number[];
+    weathercode?: number[];
   };
   current_weather?: {
     temperature: number;

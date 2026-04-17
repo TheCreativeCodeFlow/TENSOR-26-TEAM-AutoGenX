@@ -23,8 +23,8 @@ export async function getWeatherData(lat: number, lon: number): Promise<WeatherF
   const params = {
     latitude: lat,
     longitude: lon,
-    hourly: 'windspeed_10m,winddirection_10m,windgusts_10m,visibility,precipitation,weathercode',
-    current: 'temperature,windspeed,winddirection,weathercode',
+    hourly: 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,precipitation,weather_code',
+    current: 'temperature_2m,wind_speed_10m,wind_direction_10m,weather_code',
     timezone: 'auto',
     forecast_days: 7,
   };
@@ -64,6 +64,12 @@ export function extractCurrentConditions(
 
   const marineIdx = getClosestIndex(marine.hourly.time);
   const weatherIdx = getClosestIndex(weather.hourly.time);
+  const hourly = weather.hourly;
+
+  const windSpeedSeries = hourly.wind_speed_10m ?? hourly.windspeed_10m ?? [];
+  const windGustSeries = hourly.wind_gusts_10m ?? hourly.windgusts_10m ?? [];
+  const windDirectionSeries = hourly.wind_direction_10m ?? hourly.winddirection_10m ?? [];
+  const weatherCodeSeries = hourly.weather_code ?? hourly.weathercode ?? [];
 
   const weatherDescriptions: Record<number, string> = {
     0: 'Clear sky',
@@ -93,12 +99,12 @@ export function extractCurrentConditions(
     wave_height_m: Math.round((marine.hourly.wave_height[marineIdx] || 0) * 10) / 10,
     wave_direction_deg: marine.hourly.wave_direction[marineIdx] || 0,
     swell_height_m: Math.round((marine.hourly.swell_wave_height[marineIdx] || 0) * 10) / 10,
-    wind_speed_kmh: Math.round(weather.hourly.windspeed_10m[weatherIdx] || 0),
-    wind_gust_kmh: Math.round(weather.hourly.windgusts_10m[weatherIdx] || 0),
-    wind_direction_deg: weather.hourly.winddirection_10m[weatherIdx] || 0,
+    wind_speed_kmh: Math.round(windSpeedSeries[weatherIdx] || 0),
+    wind_gust_kmh: Math.round(windGustSeries[weatherIdx] || 0),
+    wind_direction_deg: windDirectionSeries[weatherIdx] || 0,
     visibility_km: Math.round((weather.hourly.visibility[weatherIdx] || 10000) / 1000 * 10) / 10,
-    weather_code: weather.hourly.weathercode[weatherIdx] || 0,
-    weather_description: weatherDescriptions[weather.hourly.weathercode[weatherIdx]] || 'Unknown',
+    weather_code: weatherCodeSeries[weatherIdx] || 0,
+    weather_description: weatherDescriptions[weatherCodeSeries[weatherIdx]] || 'Unknown',
   };
 }
 
@@ -111,6 +117,8 @@ export function extractHourlyForecasts(
   }
 
   const forecasts: { time: string; wave_height: number; wind_speed: number; wind_gust: number }[] = [];
+  const windSpeedSeries = weather.hourly.wind_speed_10m ?? weather.hourly.windspeed_10m ?? [];
+  const windGustSeries = weather.hourly.wind_gusts_10m ?? weather.hourly.windgusts_10m ?? [];
   
   const minLen = Math.min(marine.hourly.time.length, weather.hourly.time.length);
   
@@ -118,8 +126,8 @@ export function extractHourlyForecasts(
     forecasts.push({
       time: marine.hourly.time[i],
       wave_height: Math.round((marine.hourly.wave_height[i] || 0) * 10) / 10,
-      wind_speed: Math.round(weather.hourly.windspeed_10m[i] || 0),
-      wind_gust: Math.round(weather.hourly.windgusts_10m[i] || 0),
+      wind_speed: Math.round(windSpeedSeries[i] || 0),
+      wind_gust: Math.round(windGustSeries[i] || 0),
     });
   }
 

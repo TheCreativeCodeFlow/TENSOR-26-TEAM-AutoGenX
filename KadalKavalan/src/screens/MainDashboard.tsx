@@ -29,6 +29,8 @@ import { useUser } from '../context/UserContext';
 import { useWeather } from '../context/WeatherContext';
 import { getRiskColor, RiskLevel } from '../utils/riskEngine';
 import { useAppTheme } from '../theme';
+import ScreenLayout from '../components/ScreenLayout';
+import { NAV_BOTTOM_PADDING, NAV_HEIGHT } from '../constants/layout';
 
 const { width } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -638,10 +640,14 @@ const MainDashboard: React.FC = () => {
   const sky     = getSkyIcon();
 
   return (
-    <AnimatedView style={[styles.container, { backgroundColor: theme.colors.background }, screenAnimatedStyle]}>
+    <ScreenLayout style={{ backgroundColor: theme.colors.background }} withBottomPadding={false}>
+    <AnimatedView style={[styles.container, screenAnimatedStyle]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: NAV_BOTTOM_PADDING },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -870,11 +876,11 @@ const MainDashboard: React.FC = () => {
           </PremiumCard>
         )}
 
-        <View style={styles.bottomSpacer} />
+        <View style={{ height: 18 }} />
       </ScrollView>
 
       {/* Premium Floating Voice Button */}
-      <View style={styles.floatingVoiceWrap}>
+      <View style={[styles.floatingVoiceWrap, { bottom: NAV_HEIGHT + 24 }]}>
         {speaking && (
           <AnimatedView style={[StyleSheet.absoluteFill, styles.voicePulseRing, voicePulseStyle]} />
         )}
@@ -894,6 +900,7 @@ const MainDashboard: React.FC = () => {
         </AnimatedPressable>
       </View>
     </AnimatedView>
+    </ScreenLayout>
   );
 };
 
@@ -905,7 +912,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 130,
+    paddingBottom: NAV_BOTTOM_PADDING,
   },
   heroBackgroundWrap: {
     paddingTop: Platform.OS === 'ios' ? 58 : 38,
@@ -1278,9 +1285,6 @@ const styles = StyleSheet.create({
   offlineText: {
     fontSize: 13,
   },
-  bottomSpacer: {
-    height: 34,
-  },
   // \u2500\u2500\u2500 Clock Widget \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   clockWidget: {
     flexDirection: 'row',
@@ -1337,7 +1341,7 @@ const styles = StyleSheet.create({
   },
   floatingVoiceWrap: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 120 : 100,
+    bottom: NAV_HEIGHT + 24,
     right: 20,
     width: 60,
     height: 60,

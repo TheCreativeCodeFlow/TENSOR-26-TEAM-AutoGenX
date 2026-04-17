@@ -24,6 +24,8 @@ import { useUser } from '../context/UserContext';
 import { useWeather } from '../context/WeatherContext';
 import { useAppTheme } from '../theme';
 import { BOAT_SPEEDS, getZoneStatus } from '../data/coastline';
+import ScreenLayout from '../components/ScreenLayout';
+import { NAV_BOTTOM_PADDING } from '../constants/layout';
 
 const { width } = Dimensions.get('window');
 const COMPASS_SIZE = Math.min(width * 0.55, 220);
@@ -647,8 +649,14 @@ const AlertsScreen: React.FC = () => {
   const confidencePercent = returnPrediction ? Math.round(returnPrediction.confidence * 100) : null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScreenLayout style={{ backgroundColor: theme.colors.background }} withBottomPadding={false}>
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: NAV_BOTTOM_PADDING },
+        ]}
+      >
         <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>Toolkit</Text>
 
         {/* Compass Card */}
@@ -850,15 +858,16 @@ const AlertsScreen: React.FC = () => {
           ))
         )}
 
-        <View style={{ height: 110 }} />
+        <View style={{ height: 20 }} />
       </ScrollView>
     </View>
+    </ScreenLayout>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingTop: 54, paddingBottom: 100 },
+  scrollContent: { paddingTop: 54, paddingBottom: NAV_BOTTOM_PADDING },
   headerTitle: { fontSize: 28, fontWeight: '800', marginHorizontal: 16, marginBottom: 18 },
   sectionTitle: { marginHorizontal: 16, marginTop: 22, marginBottom: 10, fontSize: 12, fontWeight: '700', letterSpacing: 0.8 },
   card: { marginHorizontal: 16, marginBottom: 10, borderRadius: 24, padding: 18, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 6, overflow: 'hidden' },

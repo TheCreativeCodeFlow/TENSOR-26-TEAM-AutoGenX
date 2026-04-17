@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Kadal Kavalan",
-    "slug": "KadalKavalan",
+    "name": "SeaGuard",
+    "slug": "SeaGuard",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,10 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kadalkavalan.app"
+      "bundleIdentifier": "com.seaguard.app"
     },
     "android": {
-      "package": "com.kadalkavalan.app",
+      "package": "com.seaguard.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B4F6C"

@@ -1,5 +1,5 @@
 """
-Kadal Kavalan ML Models - Google Colab Training Script
+SeaGuard ML Models - Google Colab Training Script
 
 This script runs entirely in Google Colab (browser-based, no local machine needed).
 

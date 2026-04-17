@@ -11,6 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -24,6 +25,8 @@ import { Language, languageNames } from '../i18n';
 import { BoatClass } from '../data/zones';
 import { ThemeMode, useAppTheme } from '../theme';
 import Constants from 'expo-constants';
+import ScreenLayout from '../components/ScreenLayout';
+import { NAV_BOTTOM_PADDING, NAV_HEIGHT } from '../constants/layout';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -97,6 +100,7 @@ const SettingsScreen: React.FC = () => {
   } = useUser();
   const { zoneData, refreshData } = useWeather();
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const [whatsappEnabled, setWhatsappEnabled] = useState(preferences.whatsapp_enabled);
   const [whatsappNumber, setWhatsappNumber] = useState(preferences.whatsapp_number);
@@ -254,8 +258,13 @@ const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, stylesByTheme.container]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScreenLayout style={[styles.container, stylesByTheme.container]} withBottomPadding={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: NAV_BOTTOM_PADDING },
+        ]}
+      >
         <Text style={[styles.headerTitle, stylesByTheme.title]}>Settings</Text>
 
         <Text style={[styles.sectionTitle, stylesByTheme.section]}>Appearance</Text>
@@ -381,7 +390,7 @@ const SettingsScreen: React.FC = () => {
             <Text style={[styles.groupLabel, stylesByTheme.section]}>WhatsApp Preview</Text>
             <View style={[styles.previewBubble, { backgroundColor: theme.colors.surfaceSecondary }]}> 
               <Text style={[styles.previewBubbleText, stylesByTheme.label]}>
-                Kadal Kavalan{`\n`}
+                SeaGuard{`\n`}
                 Zone: {zone?.name_en || 'Rameswaram'}{`\n`}
                 Risk: {zoneData?.risk_assessment?.risk_level || 'SAFE'}{`\n`}
                 Wave: {zoneData?.current_conditions?.wave_height_m?.toFixed(1) || '-'}m{`\n`}
@@ -394,21 +403,27 @@ const SettingsScreen: React.FC = () => {
         <SurfaceCard theme={theme}>
           <Text style={[styles.groupLabel, stylesByTheme.section]}>Disclaimer</Text>
           <Text style={[styles.disclaimerText, stylesByTheme.value]}>
-            Kadal Kavalan is an advisory tool. Always verify official coast guard warnings and local guidance before going to sea.
+            SeaGuard is an advisory tool. Always verify official coast guard warnings and local guidance before going to sea.
           </Text>
         </SurfaceCard>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerTitle, stylesByTheme.value]}>Kadal Kavalan v1.0</Text>
+          <Text style={[styles.footerTitle, stylesByTheme.value]}>SeaGuard v1.0</Text>
         </View>
 
-        <View style={{ height: 116 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
 
       {showLanguageModal ? (
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalBackdrop} onPress={() => setShowLanguageModal(false)} />
-          <View style={[styles.modalContent, modalSurface]}>
+          <View
+            style={[
+              styles.modalContent,
+              modalSurface,
+              { marginBottom: NAV_HEIGHT, paddingBottom: Math.max(20, insets.bottom + 12) },
+            ]}
+          >
             <Text style={[styles.modalTitle, stylesByTheme.label]}>Select Language</Text>
             {languages.map((lang) => {
               const selected = language === lang;
@@ -438,7 +453,13 @@ const SettingsScreen: React.FC = () => {
       {showBoatModal ? (
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalBackdrop} onPress={() => setShowBoatModal(false)} />
-          <View style={[styles.modalContent, modalSurface]}>
+          <View
+            style={[
+              styles.modalContent,
+              modalSurface,
+              { marginBottom: NAV_HEIGHT, paddingBottom: Math.max(20, insets.bottom + 12) },
+            ]}
+          >
             <Text style={[styles.modalTitle, stylesByTheme.label]}>Select Boat Type</Text>
             {boatTypes.map((boat) => {
               const selected = boatClass === boat.id;
@@ -462,7 +483,7 @@ const SettingsScreen: React.FC = () => {
           </View>
         </View>
       ) : null}
-    </View>
+    </ScreenLayout>
   );
 };
 
@@ -472,7 +493,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: Platform.OS === 'ios' ? 58 : 42,
-    paddingBottom: 120,
+    paddingBottom: NAV_BOTTOM_PADDING,
   },
   headerTitle: {
     marginHorizontal: 16,
@@ -628,7 +649,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     borderWidth: 1,
     padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingBottom: 20,
   },
   modalTitle: {
     fontSize: 18,
