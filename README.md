@@ -1,4 +1,4 @@
-# Kadal Kavalan App - Project Summary
+# SeaGuard App - Project Summary
 
 ## 1. Problem Statement & Objective
 
@@ -14,7 +14,7 @@ Coastal fishing communities in India face significant safety risks due to unpred
 
 ### Objective
 
-**Kadal Kavalan** (Tamil: "Sea Guardian") aims to provide:
+**SeaGuard** (Tamil: "Sea Guardian") aims to provide:
 
 1. **Real-time risk assessment** - Zone-specific marine safety scoring (0-100 scale)
 2. **Multi-language interface** - Support for Tamil, Malayalam, Telugu, Odia, and English
@@ -438,7 +438,7 @@ Note: Screenshots would be captured during actual app testing. The following des
 
 ### Conclusion
 
-Kadal Kavalan successfully implements a comprehensive fishermen safety application with:
+SeaGuard successfully implements a comprehensive fishermen safety application with:
 
 1. **Real-time risk assessment** - Validated risk algorithm accounting for boat class
 2. **Multi-zone coverage** - 11 fishing zones across 4 Indian coastal states
@@ -493,6 +493,6 @@ This project serves as a template for:
 ---
 
 *Document generated from codebase analysis*
-*Project: Kadal Kavalan - Fishermen Safety App*
+*Project: SeaGuard - Fishermen Safety App*
 *Version: 1.0.0*
 *Date: April 2026*
