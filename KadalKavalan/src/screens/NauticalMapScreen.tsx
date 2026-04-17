@@ -12,7 +12,6 @@ import { useUser } from '../context/UserContext';
 import { fishingZones, FishingZone } from '../data/zones';
 import { fetchAllZonesWeather, calculateRiskScore, MarineWeatherData } from '../services/marineWeather';
 import { offshoreBoundary50km } from '../data/coastline';
-import * as Speech from 'expo-speech';
 import { useAppTheme } from '../theme';
 import ScreenLayout from '../components/ScreenLayout';
 import { NAV_BOTTOM_PADDING, NAV_HEIGHT } from '../constants/layout';
@@ -28,6 +27,7 @@ const googleMapsApiKey =
   Constants.expoConfig?.android?.config?.googleMaps?.apiKey?.trim() ?? '';
 const hasGoogleMapsApiKey = googleMapsApiKey.length > 0;
 const useWebMapFallback = !hasGoogleMapsApiKey;
+const ZOOM_CONTROL_HEIGHT = 120;
 
 // Color palette for risk levels
 const COLORS = {
@@ -182,15 +182,6 @@ const NauticalMapScreen: React.FC = () => {
     }
   };
 
-  const speakZoneWeather = (z: FishingZone) => {
-    const w = zoneWeather.get(z.id);
-    const risk = w ? calculateRiskScore(w, boatClass) : 0;
-    const level = risk >= 55 ? 'Danger' : risk >= 30 ? 'Caution' : 'Safe';
-    const langMap: Record<string, string> = { ta: 'ta-IN', ml: 'ml-IN', te: 'te-IN', or: 'or-IN', en: 'en-IN' };
-    const lang = langMap[language] || 'en-IN';
-    Speech.speak(`${z.name_en}: ${level}. Wave ${w?.wave_height?.toFixed(1) || '0'} m. Wind ${w?.wind_speed?.toFixed(0) || '0'} km/h.`, { language: lang, rate: 0.85 });
-  };
-
   const focusZoneOnMap = (z: FishingZone) => {
     if (useWebMapFallback) {
       webMapRef.current?.injectJavaScript(`window.focusZone(${z.centroid_lat}, ${z.centroid_lon}); true;`);
@@ -211,7 +202,6 @@ const NauticalMapScreen: React.FC = () => {
   const handleZonePress = (z: FishingZone) => {
     setSelectedZone(z);
     focusZoneOnMap(z);
-    speakZoneWeather(z);
   };
 
   const getZoneRiskColor = (z: FishingZone): string => {
@@ -386,7 +376,7 @@ const NauticalMapScreen: React.FC = () => {
       }
 
       setSelectedZone(zone);
-      speakZoneWeather(zone);
+      focusZoneOnMap(zone);
     } catch (error) {
       console.log('[Map] Failed to parse WebView message', error);
     }
@@ -575,7 +565,7 @@ const NauticalMapScreen: React.FC = () => {
             backgroundColor: colors.surface,
             borderColor: colors.border,
             shadowOpacity: isDark ? 0.18 : 0.12,
-            top: insets.top + 12,
+            top: insets.top + ZOOM_CONTROL_HEIGHT + 16,
           },
         ]}
       >
@@ -695,7 +685,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     gap: 8,
-    zIndex: 10,
+    zIndex: 15,
   },
   controlBtn: {
     width: 44,

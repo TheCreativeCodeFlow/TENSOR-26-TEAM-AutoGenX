@@ -24,7 +24,15 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Line,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 import { useUser } from '../context/UserContext';
 import { useWeather } from '../context/WeatherContext';
 import { getRiskColor, RiskLevel } from '../utils/riskEngine';
@@ -36,9 +44,52 @@ const { width } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedLine = Animated.createAnimatedComponent(Line);
 const ODOMETER_DIGIT_HEIGHT = 58;
 const ODOMETER_COLUMN_WIDTH = 42;
 const ODOMETER_FIXED_WIDTH = ODOMETER_COLUMN_WIDTH * 3;
+const WIND_GAUGE_MAX = 100;
+const WIND_GAUGE_WIDTH = 232;
+const WIND_GAUGE_HEIGHT = 128;
+const WIND_GAUGE_RADIUS = 78;
+const WIND_GAUGE_CX = WIND_GAUGE_WIDTH / 2;
+const WIND_GAUGE_CY = 104;
+const WIND_GAUGE_NEEDLE_LENGTH = WIND_GAUGE_RADIUS - 10;
+const WIND_GAUGE_START_ANGLE = -180;
+const WIND_GAUGE_END_ANGLE = 0;
+const WIND_GAUGE_ARC_LENGTH = Math.PI * WIND_GAUGE_RADIUS;
+const WIND_GAUGE_MARKS = [0, 25, 50, 75, 100];
+const WIND_GAUGE_MINOR_MARKS = [10, 20, 30, 40, 60, 70, 80, 90];
+
+function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(cx, cy, radius, startAngle);
+  const end = polarToCartesian(cx, cy, radius, endAngle);
+  const largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? '0' : '1';
+
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
+}
+
+const WIND_GAUGE_ARC_PATH = describeArc(
+  WIND_GAUGE_CX,
+  WIND_GAUGE_CY,
+  WIND_GAUGE_RADIUS,
+  WIND_GAUGE_START_ANGLE,
+  WIND_GAUGE_END_ANGLE
+);
+
+function windSpeedToGaugeAngle(speed: number) {
+  const clamped = Math.max(0, Math.min(speed, WIND_GAUGE_MAX));
+  return WIND_GAUGE_START_ANGLE + (clamped / WIND_GAUGE_MAX) * 180;
+}
 
 type MetricIcon = React.ComponentProps<typeof Feather>['name'];
 
@@ -241,6 +292,13 @@ const WindHeroCard: React.FC<{
   const mount = useSharedValue(0);
   const press = useSharedValue(1);
   const gradientShift = useSharedValue(0);
+  const clampedValue = Math.max(0, Math.min(Number.isFinite(value) ? value : 0, WIND_GAUGE_MAX));
+  const gaugeTarget = clampedValue / WIND_GAUGE_MAX;
+  const gaugeProgress = useSharedValue(gaugeTarget);
+  const needleRotation = useSharedValue(gaugeTarget * 180);
+
+  const gaugeTone =
+    clampedValue >= 30 ? theme.colors.danger : clampedValue >= 15 ? theme.colors.warning : theme.colors.safe;
 
   useEffect(() => {
     mount.value = withDelay(
@@ -261,6 +319,18 @@ const WindHeroCard: React.FC<{
     );
   }, [delay, gradientShift, mount]);
 
+  useEffect(() => {
+    gaugeProgress.value = withTiming(gaugeTarget, {
+      duration: 1200,
+      easing: Easing.out(Easing.cubic),
+    });
+
+    needleRotation.value = withTiming(gaugeTarget * 180, {
+      duration: 1200,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [gaugeProgress, gaugeTarget, needleRotation]);
+
   const cardAnimatedStyle = useAnimatedStyle(() => ({
     opacity: mount.value,
     transform: [{ scale: (0.96 + mount.value * 0.04) * press.value }],
@@ -270,6 +340,22 @@ const WindHeroCard: React.FC<{
     opacity: 0.14 + gradientShift.value * 0.08,
     transform: [{ translateX: -8 + gradientShift.value * 16 }, { translateY: -4 + gradientShift.value * 8 }],
   }));
+
+  const activeArcProps = useAnimatedProps(() => ({
+    strokeDashoffset: WIND_GAUGE_ARC_LENGTH * (1 - gaugeProgress.value),
+  }));
+
+  const needleProps = useAnimatedProps(() => {
+    const angle = WIND_GAUGE_START_ANGLE + needleRotation.value;
+    const radians = (angle * Math.PI) / 180;
+    const x2 = WIND_GAUGE_CX + WIND_GAUGE_NEEDLE_LENGTH * Math.cos(radians);
+    const y2 = WIND_GAUGE_CY + WIND_GAUGE_NEEDLE_LENGTH * Math.sin(radians);
+
+    return {
+      x2,
+      y2,
+    };
+  });
 
   return (
     <AnimatedPressable
@@ -309,11 +395,109 @@ const WindHeroCard: React.FC<{
       </View>
 
       <View style={styles.windHeroCenter}>
-        <OdometerNumber value={value} color={theme.colors.textPrimary} />
+        <View style={styles.windGaugeWrap}>
+          <Svg width={WIND_GAUGE_WIDTH} height={WIND_GAUGE_HEIGHT}>
+            <Defs>
+              <SvgLinearGradient id="windGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <Stop offset="0%" stopColor="#4F8B6E" />
+                <Stop offset="52%" stopColor="#CFA15A" />
+                <Stop offset="100%" stopColor="#B05D5D" />
+              </SvgLinearGradient>
+            </Defs>
+
+            {WIND_GAUGE_MINOR_MARKS.map((mark) => {
+              const angle = windSpeedToGaugeAngle(mark);
+              const start = polarToCartesian(WIND_GAUGE_CX, WIND_GAUGE_CY, WIND_GAUGE_RADIUS - 9, angle);
+              const end = polarToCartesian(WIND_GAUGE_CX, WIND_GAUGE_CY, WIND_GAUGE_RADIUS - 2, angle);
+
+              return (
+                <Line
+                  key={`minor-${mark}`}
+                  x1={start.x}
+                  y1={start.y}
+                  x2={end.x}
+                  y2={end.y}
+                  stroke={theme.colors.border}
+                  strokeWidth={1}
+                  opacity={0.42}
+                />
+              );
+            })}
+
+            {WIND_GAUGE_MARKS.map((mark) => {
+              const angle = windSpeedToGaugeAngle(mark);
+              const start = polarToCartesian(WIND_GAUGE_CX, WIND_GAUGE_CY, WIND_GAUGE_RADIUS - 12, angle);
+              const end = polarToCartesian(WIND_GAUGE_CX, WIND_GAUGE_CY, WIND_GAUGE_RADIUS + 1, angle);
+              const label = polarToCartesian(WIND_GAUGE_CX, WIND_GAUGE_CY, WIND_GAUGE_RADIUS + 16, angle);
+
+              return (
+                <React.Fragment key={`major-${mark}`}>
+                  <Line
+                    x1={start.x}
+                    y1={start.y}
+                    x2={end.x}
+                    y2={end.y}
+                    stroke={theme.colors.textSecondary}
+                    strokeWidth={1.4}
+                    opacity={0.58}
+                  />
+                  <SvgText
+                    x={label.x}
+                    y={label.y}
+                    fill={theme.colors.textSecondary}
+                    fontSize={10}
+                    fontWeight="600"
+                    opacity={0.7}
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                  >
+                    {mark}
+                  </SvgText>
+                </React.Fragment>
+              );
+            })}
+
+            <Path
+              d={WIND_GAUGE_ARC_PATH}
+              stroke={theme.colors.border}
+              strokeWidth={8}
+              strokeLinecap="round"
+              opacity={0.45}
+              fill="none"
+            />
+
+            <AnimatedPath
+              d={WIND_GAUGE_ARC_PATH}
+              stroke="url(#windGaugeGradient)"
+              strokeWidth={8}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${WIND_GAUGE_ARC_LENGTH} ${WIND_GAUGE_ARC_LENGTH}`}
+              animatedProps={activeArcProps}
+            />
+
+            <AnimatedLine
+              x1={WIND_GAUGE_CX}
+              y1={WIND_GAUGE_CY}
+              x2={WIND_GAUGE_CX - WIND_GAUGE_NEEDLE_LENGTH}
+              y2={WIND_GAUGE_CY}
+              stroke={gaugeTone}
+              strokeWidth={2}
+              strokeLinecap="round"
+              animatedProps={needleProps}
+            />
+
+            <Circle cx={WIND_GAUGE_CX} cy={WIND_GAUGE_CY} r={4.5} fill={gaugeTone} />
+          </Svg>
+
+          <View style={styles.windGaugeCenterLabel}>
+            <Text style={[styles.windGaugeValue, { color: theme.colors.textPrimary }]}>{Math.round(clampedValue)}</Text>
+            <Text style={[styles.windGaugeUnit, { color: theme.colors.textSecondary }]}>{unit}</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.windHeroBottom}>
-        <Text style={[styles.windHeroUnit, { color: theme.colors.textPrimary }]}>{unit}</Text>
         <Text style={[styles.windHeroDescriptor, { color: theme.colors.textSecondary }]}>{descriptor}</Text>
       </View>
     </AnimatedPressable>
@@ -499,7 +683,7 @@ const MainDashboard: React.FC = () => {
   };
 
   const score = riskData?.risk_score || 0;
-  const scoreValue = useCountUp(score, 1400, 0);
+  const scoreValue = useCountUp(score, 800, 0);
   const riskColor = getRiskColor(getRiskLevel());
 
   const screenEntry = useSharedValue(0);
@@ -519,7 +703,7 @@ const MainDashboard: React.FC = () => {
 
   useEffect(() => {
     ringProgress.value = withTiming(score / 100, {
-      duration: 1200,
+      duration: 700,
       easing: Easing.out(Easing.cubic),
     });
   }, [ringProgress, score]);
@@ -1146,26 +1330,46 @@ const styles = StyleSheet.create({
   windHeroCenter: {
     marginTop: 14,
     marginBottom: 14,
-    minHeight: ODOMETER_DIGIT_HEIGHT,
+    minHeight: 128,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  windGaugeWrap: {
+    width: WIND_GAUGE_WIDTH,
+    height: WIND_GAUGE_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  windGaugeCenterLabel: {
+    position: 'absolute',
+    top: 60,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+  },
+  windGaugeValue: {
+    fontSize: 36,
+    fontWeight: '800',
+    lineHeight: 40,
+    letterSpacing: 0.6,
+  },
+  windGaugeUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 7,
+    lineHeight: 20,
   },
   windHeroBottom: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     gap: 12,
     minHeight: 20,
-  },
-  windHeroUnit: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 18,
   },
   windHeroDescriptor: {
     fontSize: 12,
     lineHeight: 16,
-    textAlign: 'right',
+    textAlign: 'center',
   },
   odometerFixedRail: {
     width: ODOMETER_FIXED_WIDTH,
