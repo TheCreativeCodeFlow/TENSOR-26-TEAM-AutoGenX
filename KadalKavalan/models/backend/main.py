@@ -1,5 +1,5 @@
 """
-Kadal Kavalan - FastAPI Backend
+SeaGuard - FastAPI Backend
 ML Inference Server for React Native App
 
 Usage:
@@ -56,7 +56,7 @@ print(f"[*] Twilio configured: {twilio_configured}, WhatsApp Number: {TWILIO_WHA
 whatsapp_subscribers = {}
 
 # Setup CORS for React Native app
-app = FastAPI(title="Kadal Kavalan ML API", version="1.0.0")
+app = FastAPI(title="SeaGuard ML API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -86,7 +86,7 @@ async def request_validation_exception_handler(request: Request, exc: RequestVal
     )
 
 print("="*50)
-print("Kadal Kavalan ML Backend")
+print("SeaGuard ML Backend")
 print("="*50)
 
 # ============================================================================
@@ -296,7 +296,7 @@ def simulate_prediction(features: list, model_type: str) -> float:
 
 def format_whatsapp_message(zone_id: str, zone_name: str, risk_level: str, wave_height: float, wind_speed: float, safe_window: str) -> str:
     return (
-        f"🌊 KADAL KAVALAN\n"
+        f"🌊 SEAGUARD\n"
         f"📍 {zone_name}\n"
         f"⚠️ Risk: {risk_level}\n"
         f"🌊 Wave: {wave_height:.1f}m\n"
@@ -378,7 +378,7 @@ def calculate_risk(weather: dict, boat_class: str) -> str:
 
 @app.get("/")
 async def root():
-    return {"message": "Kadal Kavalan ML API", "version": "1.0.0"}
+    return {"message": "SeaGuard ML API", "version": "1.0.0"}
 
 @app.get("/health")
 async def health():
@@ -540,7 +540,7 @@ async def whatsapp_subscribe(req: WhatsAppSubscribeRequest):
         0.0,
         "Subscribed!"
     )
-    send_whatsapp_message(phone, f"✅ Subscribed to Kadal Kavalan alerts!\n\n{confirmation_msg}")
+    send_whatsapp_message(phone, f"✅ Subscribed to SeaGuard alerts!\n\n{confirmation_msg}")
     
     return {"status": "subscribed", "phone": phone}
 
@@ -553,7 +553,7 @@ async def whatsapp_unsubscribe(req: WhatsAppAlertRequest):
     
     if phone in whatsapp_subscribers:
         del whatsapp_subscribers[phone]
-        send_whatsapp_message(phone, "❌ Unsubscribed from Kadal Kavalan alerts.")
+        send_whatsapp_message(phone, "❌ Unsubscribed from SeaGuard alerts.")
         return {"status": "unsubscribed", "phone": phone}
     return {"status": "not_found", "phone": phone}
 

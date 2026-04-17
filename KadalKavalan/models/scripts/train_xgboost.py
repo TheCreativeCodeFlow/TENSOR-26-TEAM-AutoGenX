@@ -1,5 +1,5 @@
 """
-Kadal Kavalan - XGBoost Training Script
+SeaGuard - XGBoost Training Script
 Use existing labeled_data.csv if available
 """
 
@@ -36,7 +36,7 @@ BOAT_LIMITS = {
 }
 
 def main():
-    print("=== Kadal Kavalan XGBoost Training ===\n")
+    print("=== SeaGuard XGBoost Training ===\n")
     
     dataPath = os.path.join(os.path.dirname(__file__), '..', 'data', 'labeled_data.csv')
     

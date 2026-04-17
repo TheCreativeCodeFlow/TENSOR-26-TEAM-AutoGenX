@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Kadal Kavalan - Data Collection
+echo SeaGuard - Data Collection
 echo ========================================
 echo.
 echo Fetching 2 years of marine weather data...

@@ -1,4 +1,4 @@
-# Kadal Kavalan - ML Models (XGBoost + FastAPI)
+# SeaGuard - ML Models (XGBoost + FastAPI)
 
 ## Overview
 

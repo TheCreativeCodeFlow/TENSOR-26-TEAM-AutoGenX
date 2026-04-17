@@ -1,8 +1,8 @@
-# Kadal Kavalan ML Predictions Implementation Plan
+# SeaGuard ML Predictions Implementation Plan
 
 ## Project Overview
 
-Add HuggingFace ML predictions to augment existing risk scoring in the Kadal Kavalan fishermen safety app.
+Add HuggingFace ML predictions to augment existing risk scoring in the SeaGuard fishermen safety app.
 
 **Data Source**: Open-Meteo Historical API (free, no registration)
 **Training Data**: 2 years (2023-2024)

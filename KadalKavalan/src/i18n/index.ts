@@ -1,4 +1,4 @@
-// i18n translations for Kadal Kavalan
+// i18n translations for SeaGuard
 // Supports: Tamil (ta), Malayalam (ml), Telugu (te), Odia (or), English (en)
 
 export type Language = 'ta' | 'ml' | 'te' | 'or' | 'en';
@@ -238,7 +238,7 @@ const te: Translations = {
   push_alerts: 'Push',
   emergency: 'Emergency',
   coast_guard: 'Coast Guard: 1554',
-  welcome: 'Welcome to Kadal Kavalan',
+  welcome: 'Welcome to SeaGuard',
   select_language: 'Select language',
   select_boat_type: 'select boat type',
   get_started: 'Get Started',
@@ -314,7 +314,7 @@ const or: Translations = {
 };
 
 const en: Translations = {
-  app_name: 'Kadal Kavalan',
+  app_name: 'SeaGuard',
   app_tagline: 'Sea Guardian',
   risk_safe: 'Safe',
   risk_advisory: 'Caution',
@@ -352,7 +352,7 @@ const en: Translations = {
   push_alerts: 'Push',
   emergency: 'Emergency',
   coast_guard: 'Coast Guard: 1554',
-  welcome: 'Welcome to Kadal Kavalan',
+  welcome: 'Welcome to SeaGuard',
   select_language: 'Select your language',
   select_boat_type: 'Select your boat type',
   get_started: 'Get Started',

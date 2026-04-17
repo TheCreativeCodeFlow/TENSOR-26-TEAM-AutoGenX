@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '../context/UserContext';
@@ -13,6 +14,8 @@ import { fetchAllZonesWeather, calculateRiskScore, MarineWeatherData } from '../
 import { offshoreBoundary50km } from '../data/coastline';
 import * as Speech from 'expo-speech';
 import { useAppTheme } from '../theme';
+import ScreenLayout from '../components/ScreenLayout';
+import { NAV_BOTTOM_PADDING, NAV_HEIGHT } from '../constants/layout';
 
 const INITIAL_REGION = {
   latitude: 12.5,
@@ -49,22 +52,16 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const ZonePreviewCard: React.FC<{
   zone: FishingZone;
-  risk: number;
-  wave: number;
-  wind: number;
   active: boolean;
   onPress: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
   isDark: boolean;
-}> = ({ zone, risk, wave, wind, active, onPress, colors, isDark }) => {
+}> = ({ zone, active, onPress, colors, isDark }) => {
   const scale = useSharedValue(1);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-
-  const riskText = risk >= 55 ? 'Danger' : risk >= 30 ? 'Advisory' : 'Safe';
-  const riskColor = risk >= 55 ? colors.danger : risk >= 30 ? colors.warning : colors.safe;
 
   return (
     <AnimatedPressable
@@ -73,8 +70,8 @@ const ZonePreviewCard: React.FC<{
         style,
         {
           backgroundColor: colors.surface,
-          borderColor: active ? riskColor : colors.border,
-          shadowOpacity: isDark ? 0.18 : 0.12,
+          borderColor: active ? colors.safe : colors.border,
+          shadowOpacity: 0.15,
         },
       ]}
       onPress={onPress}
@@ -91,12 +88,13 @@ const ZonePreviewCard: React.FC<{
         end={{ x: 0.5, y: 1 }}
         style={styles.zoneCardHighlight}
       />
-      <Text style={[styles.zoneCardTitle, { color: colors.textPrimary }]}>{zone.name_en}</Text>
-      <Text style={[styles.zoneCardRisk, { color: riskColor }]}>{riskText}</Text>
-      <View style={styles.zoneMetricsRow}>
-        <Text style={[styles.zoneMetricText, { color: colors.textSecondary }]}>Wave {wave.toFixed(1)}m</Text>
-        <Text style={[styles.zoneMetricText, { color: colors.textSecondary }]}>Wind {Math.round(wind)}km/h</Text>
-      </View>
+      <Text
+        style={[styles.zoneCardTitle, { color: colors.textPrimary }]}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
+        {zone.name_en}
+      </Text>
     </AnimatedPressable>
   );
 };
@@ -104,6 +102,7 @@ const ZonePreviewCard: React.FC<{
 const NauticalMapScreen: React.FC = () => {
   const { language, boatClass } = useUser();
   const { colors, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const webMapRef = useRef<WebView>(null);
   
@@ -114,11 +113,40 @@ const NauticalMapScreen: React.FC = () => {
   const [zoneWeather, setZoneWeather] = useState<Map<string, MarineWeatherData>>(new Map());
   const [loading, setLoading] = useState(true);
 
+  const locationStripOpacity = useSharedValue(1);
+  const locationStripTranslateY = useSharedValue(0);
+  const detailCardOpacity = useSharedValue(0);
+  const detailCardTranslateY = useSharedValue(16);
+
   console.log('[Map] Render, zones:', zoneWeather.size);
 
   useEffect(() => {
     init();
   }, []);
+
+  useEffect(() => {
+    const hasSelection = selectedZone !== null;
+    locationStripOpacity.value = withTiming(hasSelection ? 0 : 1, { duration: 220 });
+    locationStripTranslateY.value = withTiming(hasSelection ? 10 : 0, { duration: 220 });
+    detailCardOpacity.value = withTiming(hasSelection ? 1 : 0, { duration: 240 });
+    detailCardTranslateY.value = withTiming(hasSelection ? 0 : 14, { duration: 240 });
+  }, [
+    detailCardOpacity,
+    detailCardTranslateY,
+    locationStripOpacity,
+    locationStripTranslateY,
+    selectedZone,
+  ]);
+
+  const locationStripAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: locationStripOpacity.value,
+    transform: [{ translateY: locationStripTranslateY.value }],
+  }));
+
+  const detailCardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: detailCardOpacity.value,
+    transform: [{ translateY: detailCardTranslateY.value }],
+  }));
 
   const init = async () => {
     console.log('[Map] init called');
@@ -223,17 +251,7 @@ const NauticalMapScreen: React.FC = () => {
     });
   }, [zoneWeather, boatClass, showWaves]);
 
-  const zonePreviewData = useMemo(() => {
-    return fishingZones.map((zone) => {
-      const weather = zoneWeather.get(zone.id);
-      return {
-        zone,
-        risk: weather ? calculateRiskScore(weather, boatClass) : 0,
-        wave: weather?.wave_height ?? 0,
-        wind: weather?.wind_speed ?? 0,
-      };
-    });
-  }, [boatClass, zoneWeather]);
+  const zonePreviewData = useMemo(() => fishingZones, []);
 
   const leafletHtml = useMemo(() => {
     const zonePayload = JSON.stringify(webZoneData);
@@ -423,7 +441,8 @@ const NauticalMapScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+      <ScreenLayout style={{ backgroundColor: colors.background }} withBottomPadding={false}>
+      <View style={styles.loading}>
         <Text style={[styles.loadingTitle, { color: colors.textPrimary }]}>Loading Sea Conditions...</Text>
         <Text style={[styles.loadingSub, { color: colors.textSecondary }]}>Fetching real-time data from Open-Meteo</Text>
         <Text style={[styles.loadingData, { color: colors.textSecondary }]}> 
@@ -433,14 +452,16 @@ const NauticalMapScreen: React.FC = () => {
           }).join(' ')}
         </Text>
       </View>
+      </ScreenLayout>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScreenLayout style={{ backgroundColor: colors.background }} withBottomPadding={false}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Kadal Kavalan - Sea Safety Map</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>SeaGuard - Sea Safety Map</Text>
         <Text style={[styles.headerSub, { color: colors.textSecondary }]}> 
           Real-time wave & wind conditions for {fishingZones.length} zones
         </Text>
@@ -499,7 +520,7 @@ const NauticalMapScreen: React.FC = () => {
       )}
 
       {/* Controls */}
-      <View style={styles.controls}>
+      <View style={[styles.controls, { bottom: NAV_HEIGHT + 120 }]}> 
         <TouchableOpacity
           style={[
             styles.controlBtn,
@@ -547,7 +568,17 @@ const NauticalMapScreen: React.FC = () => {
       </View>
 
       {/* Legend */}
-      <View style={[styles.legend, { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.18 : 0.12 }]}>
+      <View
+        style={[
+          styles.legend,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            shadowOpacity: isDark ? 0.18 : 0.12,
+            top: insets.top + 12,
+          },
+        ]}
+      >
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: COLORS.SAFE }]} />
           <Text style={[styles.legendText, { color: colors.textSecondary }]}>Safe</Text>
@@ -562,31 +593,54 @@ const NauticalMapScreen: React.FC = () => {
         </View>
       </View>
 
-      <View style={styles.zoneGridWrap}>
+      <Animated.View
+        style={[
+          styles.zoneGridWrap,
+          { bottom: NAV_HEIGHT + insets.bottom + 12 },
+          locationStripAnimatedStyle,
+        ]}
+        pointerEvents={selectedZone ? 'none' : 'auto'}
+      >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneGridScroll}>
-          {zonePreviewData.map((item) => (
+          {zonePreviewData.map((zone) => (
             <ZonePreviewCard
-              key={item.zone.id}
-              zone={item.zone}
-              risk={item.risk}
-              wave={item.wave}
-              wind={item.wind}
-              active={selectedZone?.id === item.zone.id}
-              onPress={() => handleZonePress(item.zone)}
+              key={zone.id}
+              zone={zone}
+              active={selectedZone?.id === zone.id}
+              onPress={() => handleZonePress(zone)}
               colors={colors}
               isDark={isDark}
             />
           ))}
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Selected Zone Info */}
       {selectedZone && (
-        <View style={[styles.popup, { backgroundColor: colors.surface, borderColor: colors.border, shadowOpacity: isDark ? 0.2 : 0.12 }]}>
+        <Animated.View
+          style={[
+            styles.popup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              shadowOpacity: isDark ? 0.2 : 0.12,
+              bottom: NAV_HEIGHT + 16,
+            },
+            detailCardAnimatedStyle,
+          ]}
+        >
           <View style={styles.popupHeader}>
-            <Text style={[styles.popupTitle, { color: colors.textPrimary }]}>{selectedZone.id}</Text>
-            <Text style={[styles.popupName, { color: colors.textPrimary }]}>{selectedZone.name_en}</Text>
-            <Text style={[styles.popupState, { color: colors.textSecondary }]}>{selectedZone.coastal_state}</Text>
+            <View style={styles.popupTitleWrap}>
+              <Text style={[styles.popupTitle, { color: colors.textPrimary }]}>{selectedZone.id}</Text>
+              <Text style={[styles.popupName, { color: colors.textPrimary }]}>{selectedZone.name_en}</Text>
+              <Text style={[styles.popupState, { color: colors.textSecondary }]}>{selectedZone.coastal_state}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.popupCloseBtn, { borderColor: colors.border, backgroundColor: colors.surfaceSecondary }]}
+              onPress={() => setSelectedZone(null)}
+            >
+              <Feather name="x" size={16} color={colors.iconMuted} />
+            </TouchableOpacity>
           </View>
           {(() => {
             const w = zoneWeather.get(selectedZone.id);
@@ -611,21 +665,22 @@ const NauticalMapScreen: React.FC = () => {
               </View>
             );
           })()}
-        </View>
+        </Animated.View>
       )}
     </View>
+    </ScreenLayout>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: NAV_BOTTOM_PADDING },
   loadingTitle: { fontSize: 24, fontWeight: '700' },
   loadingSub: { fontSize: 14, marginTop: 8 },
   loadingData: { fontSize: 10, marginTop: 20, fontFamily: 'monospace' },
   
   header: {
-    paddingTop: 50,
+    paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
@@ -634,13 +689,13 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 12, marginTop: 4 },
   headerWarning: { fontSize: 11, marginTop: 4 },
   
-  map: { flex: 1 },
+  map: { flex: 1, zIndex: 0 },
   
   controls: {
     position: 'absolute',
-    top: 110,
-    right: 12,
+    right: 16,
     gap: 8,
+    zIndex: 10,
   },
   controlBtn: {
     width: 44,
@@ -659,14 +714,15 @@ const styles = StyleSheet.create({
   
   legend: {
     position: 'absolute',
-    top: 110,
-    left: 12,
+    top: 16,
+    left: 16,
     borderRadius: 8,
     padding: 8,
     borderWidth: 1,
     shadowColor: '#000',
     shadowRadius: 4,
     elevation: 3,
+    zIndex: 10,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', marginVertical: 2 },
   legendDot: { width: 12, height: 12, borderRadius: 6, marginRight: 6 },
@@ -676,49 +732,39 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 132,
+    bottom: NAV_HEIGHT + 12,
+    zIndex: 10,
   },
   zoneGridScroll: {
-    paddingHorizontal: 12,
-    gap: 10,
+    paddingHorizontal: 14,
+    gap: 12,
   },
   zoneCard: {
-    width: 188,
-    borderRadius: 24,
+    width: 168,
+    minHeight: 64,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 14,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 6,
+    justifyContent: 'center',
   },
   zoneCardHighlight: {
     ...StyleSheet.absoluteFillObject,
-    height: 66,
+    height: 48,
   },
   zoneCardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-  },
-  zoneCardRisk: {
-    marginTop: 4,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  zoneMetricsRow: {
-    marginTop: 10,
-    gap: 4,
-  },
-  zoneMetricText: {
-    fontSize: 12,
+    lineHeight: 20,
   },
   
   popup: {
     position: 'absolute',
-    bottom: 20,
+    bottom: NAV_HEIGHT + 16,
     left: 12,
     right: 12,
     borderRadius: 16,
@@ -727,11 +773,21 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowRadius: 8,
     elevation: 6,
+    zIndex: 15,
   },
-  popupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  popupHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  popupTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   popupTitle: { fontSize: 18, fontWeight: '700' },
   popupName: { fontSize: 14, flex: 1, marginLeft: 8 },
   popupState: { fontSize: 12 },
+  popupCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   popupContent: { flexDirection: 'row', justifyContent: 'space-around' },
   popupRow: { alignItems: 'center' },
   popupLabel: { fontSize: 12 },

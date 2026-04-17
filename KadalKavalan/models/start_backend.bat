@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Kadal Kavalan - ML Backend
+echo SeaGuard - ML Backend
 echo ========================================
 echo.
 echo Starting FastAPI server on port 8000...

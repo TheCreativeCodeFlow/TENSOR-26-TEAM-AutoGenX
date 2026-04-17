@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Local Training Script for Kadal Kavalan ML Models
+Local Training Script for SeaGuard ML Models
 Trains 3 models: Day Safety, Hourly Risk, Return Time
 
 Usage:
@@ -354,7 +354,7 @@ def save_models(models, metrics, output_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train Kadal Kavalan ML Models')
+    parser = argparse.ArgumentParser(description='Train SeaGuard ML Models')
     parser.add_argument('--data_dir', default='./data', help='Data directory')
     parser.add_argument('--output_dir', default='./models', help='Output directory')
     parser.add_argument('--use_existing', action='store_true', help='Use existing CSV if available')

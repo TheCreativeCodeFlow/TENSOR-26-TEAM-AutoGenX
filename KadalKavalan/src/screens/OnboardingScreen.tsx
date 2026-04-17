@@ -8,16 +8,20 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
 import { useUser } from '../context/UserContext';
 import { useWeather } from '../context/WeatherContext';
 import { FishingZone, fishingZones, BoatClass } from '../data/zones';
 import { Language, languageNames } from '../i18n';
+import ScreenLayout from '../components/ScreenLayout';
+import { NAV_BOTTOM_PADDING } from '../constants/layout';
 
 const OnboardingScreen: React.FC = () => {
   const { completeOnboarding, setLanguage, setZone, setBoatClass, setUserLatLon, language, setIsOnboarded } = useUser();
   const { fetchWeatherData } = useWeather();
+  const insets = useSafeAreaInsets();
   
   const [step, setStep] = useState(0);
   console.log('[Onboarding] Rendering step:', step);
@@ -114,16 +118,24 @@ const OnboardingScreen: React.FC = () => {
 
   if (step === 0) {
     return (
-      <View style={styles.splashContainer}>
+      <ScreenLayout style={styles.splashContainer} withBottomPadding={false}>
         <StatusBar barStyle="light-content" />
         <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
           <Text style={styles.logoIcon}>⚓</Text>
-          <Text style={styles.logoTitle}>KADAL KAVALAN</Text>
+          <Text style={styles.logoTitle}>SEAGUARD</Text>
           <Text style={styles.logoSubtitle}>கடல் காவலன் · Sea Guardian</Text>
           <Text style={styles.logoSubtitleEn}>Hyperlocal Marine Safety Advisory</Text>
         </Animated.View>
         
-        <Animated.View style={[styles.glassCard, { transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View
+          style={[
+            styles.glassCard,
+            {
+              transform: [{ translateY: slideAnim }],
+              marginBottom: Math.max(24, insets.bottom + 12),
+            },
+          ]}
+        >
           <Text style={styles.selectLangTitle}>Select Your Language</Text>
           <View style={styles.langGrid}>
             {(Object.keys(languageNames) as Language[]).map((lang) => (
@@ -141,13 +153,13 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.contBtnText}>{t.continue}</Text>
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </ScreenLayout>
     );
   }
 
   if (step === 1) {
     return (
-      <View style={styles.container}>
+      <ScreenLayout style={styles.container} withBottomPadding={false}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.stepContent}>
           <Text style={styles.stepTitle}>{t.locTitle}</Text>
@@ -164,7 +176,10 @@ const OnboardingScreen: React.FC = () => {
             <ScrollView
               style={styles.zoneListScroll}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.zoneListContent}
+              contentContainerStyle={[
+                styles.zoneListContent,
+                { paddingBottom: Math.max(NAV_BOTTOM_PADDING, insets.bottom + 20) },
+              ]}
             >
               <View style={styles.zoneList}>
                 {fishingZones.map((zone) => (
@@ -183,18 +198,18 @@ const OnboardingScreen: React.FC = () => {
           </View>
         </View>
         
-        <View style={styles.navRow}>
+        <View style={[styles.navRow, { paddingBottom: Math.max(16, insets.bottom + 8) }]}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setStep(0)}><Text style={styles.backBtnText}>← {t.back}</Text></TouchableOpacity>
           <TouchableOpacity style={[styles.nextBtn, !selectedZone && styles.nextBtnDisabled]} onPress={handleContinue} disabled={!selectedZone}>
             <Text style={styles.nextBtnText}>{t.next}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScreenLayout>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <ScreenLayout style={styles.container} withBottomPadding={false}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.stepContent}>
         <Text style={styles.stepTitle}>{t.boatTitle}</Text>
@@ -218,10 +233,10 @@ const OnboardingScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
       
-      <View style={styles.navRow}>
+      <View style={[styles.navRow, { paddingBottom: Math.max(16, insets.bottom + 8) }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}><Text style={styles.backBtnText}>← {t.back}</Text></TouchableOpacity>
       </View>
-    </View>
+    </ScreenLayout>
   );
 };
 
@@ -255,7 +270,7 @@ const styles = StyleSheet.create({
   
   zoneListContainer: { flex: 1 },
   zoneListScroll: { flex: 1 },
-  zoneListContent: { paddingHorizontal: 16, paddingBottom: 120 },
+  zoneListContent: { paddingHorizontal: 16 },
   zoneList: {},
   zoneCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#e5e2e1' },
   zoneCardSelected: { borderColor: '#0B4F6C', backgroundColor: '#f0f4f6' },
@@ -277,7 +292,7 @@ const styles = StyleSheet.create({
   startBtn: { backgroundColor: '#0B4F6C', padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 20 },
   startBtnText: { color: '#fff', fontSize: 17, fontWeight: '600' },
   
-  navRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, paddingBottom: 30 },
+  navRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 16 },
   backBtn: { padding: 12 },
   backBtnText: { color: '#0B4F6C', fontSize: 15, fontWeight: '500' },
   nextBtn: { backgroundColor: '#0B4F6C', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 12 },
