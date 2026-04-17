@@ -49,6 +49,7 @@ const AnimatedLine = Animated.createAnimatedComponent(Line);
 const ODOMETER_DIGIT_HEIGHT = 58;
 const ODOMETER_COLUMN_WIDTH = 42;
 const ODOMETER_FIXED_WIDTH = ODOMETER_COLUMN_WIDTH * 3;
+const WIND_DIRECTION_FLOW_OFFSETS = [-18, -6, 6, 18];
 const WIND_GAUGE_MAX = 100;
 const WIND_GAUGE_WIDTH = 232;
 const WIND_GAUGE_HEIGHT = 128;
@@ -89,6 +90,15 @@ const WIND_GAUGE_ARC_PATH = describeArc(
 function windSpeedToGaugeAngle(speed: number) {
   const clamped = Math.max(0, Math.min(speed, WIND_GAUGE_MAX));
   return WIND_GAUGE_START_ANGLE + (clamped / WIND_GAUGE_MAX) * 180;
+}
+
+function normalizeDegrees(degrees: number): number {
+  return ((Math.round(degrees) % 360) + 360) % 360;
+}
+
+function getCardinalDirection(degrees: number): string {
+  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return directions[Math.round(normalizeDegrees(degrees) / 45) % directions.length];
 }
 
 type MetricIcon = React.ComponentProps<typeof Feather>['name'];
@@ -564,6 +574,101 @@ const SecondaryMetricCard: React.FC<{
   );
 });
 
+const WindDirectionMetricCard: React.FC<{
+  directionDeg: number;
+  delay?: number;
+  theme: ThemeRef;
+}> = React.memo(({ directionDeg, delay = 0, theme }) => {
+  const mount = useSharedValue(0);
+  const press = useSharedValue(1);
+  const flow = useSharedValue(0);
+  const normalizedDirection = normalizeDegrees(Number.isFinite(directionDeg) ? directionDeg : 0);
+  const cardinal = getCardinalDirection(normalizedDirection);
+
+  useEffect(() => {
+    mount.value = withDelay(
+      delay,
+      withTiming(1, {
+        duration: 650,
+        easing: Easing.out(Easing.cubic),
+      })
+    );
+
+    flow.value = withRepeat(
+      withTiming(1, {
+        duration: 3600,
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+  }, [delay, flow, mount]);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: mount.value,
+    transform: [{ translateY: 20 * (1 - mount.value) }, { scale: press.value }],
+  }));
+
+  const flowShiftStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -18 + flow.value * 36 }],
+  }));
+
+  const flowLineColor = theme.isDark ? 'rgba(148,163,184,0.24)' : 'rgba(71,85,105,0.16)';
+
+  return (
+    <AnimatedPressable
+      style={[
+        styles.secondaryMetricCard,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.border,
+          shadowOpacity: theme.isDark ? 0.18 : 0.1,
+        },
+        cardAnimatedStyle,
+      ]}
+      onPressIn={() => {
+        press.value = withTiming(0.97, { duration: 120, easing: Easing.out(Easing.quad) });
+      }}
+      onPressOut={() => {
+        press.value = withTiming(1, { duration: 170, easing: Easing.out(Easing.quad) });
+      }}
+    >
+      <View style={styles.windDirectionFlowLayer} pointerEvents="none">
+        <View
+          style={[
+            styles.windDirectionFlowRotator,
+            { transform: [{ rotate: `${normalizedDirection}deg` }] },
+          ]}
+        >
+          <AnimatedView style={[styles.windDirectionFlowShift, flowShiftStyle]}>
+            {WIND_DIRECTION_FLOW_OFFSETS.map((offset, index) => (
+              <View
+                key={`wind-flow-${offset}`}
+                style={[
+                  styles.windDirectionFlowLine,
+                  {
+                    backgroundColor: flowLineColor,
+                    opacity: 0.18 + index * 0.07,
+                    transform: [{ translateY: offset }],
+                  },
+                ]}
+              />
+            ))}
+          </AnimatedView>
+        </View>
+      </View>
+
+      <View style={[styles.metricIconWrap, styles.metricIconWrapAligned, { backgroundColor: theme.colors.surfaceSecondary }]}>
+        <View style={{ transform: [{ rotate: `${normalizedDirection}deg` }] }}>
+          <Feather name="navigation" size={18} color={theme.colors.iconMuted} />
+        </View>
+      </View>
+      <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>Wind Direction</Text>
+      <Text style={[styles.metricValue, { color: theme.colors.textPrimary }]}>{`${normalizedDirection}° ${cardinal}`}</Text>
+    </AnimatedPressable>
+  );
+});
+
 const MainDashboard: React.FC = () => {
   const { t, zone, language, boatClass } = useUser();
   const { zoneData, isOffline, fetchWeatherData, lastFetched } = useWeather();
@@ -1025,7 +1130,11 @@ const MainDashboard: React.FC = () => {
               unit="m"
               decimals={1}
               delay={500}
-              fullWidth
+            />
+            <WindDirectionMetricCard
+              theme={theme}
+              directionDeg={conditions?.wind_direction_deg ?? 0}
+              delay={580}
             />
           </View>
         </View>
@@ -1444,6 +1553,31 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     lineHeight: 26,
+  },
+  windDirectionFlowLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  windDirectionFlowRotator: {
+    position: 'absolute',
+    left: -36,
+    right: -36,
+    top: '50%',
+    height: 72,
+    marginTop: -36,
+  },
+  windDirectionFlowShift: {
+    width: '100%',
+    height: '100%',
+  },
+  windDirectionFlowLine: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 58,
+    marginLeft: -29,
+    height: 2,
+    borderRadius: 999,
   },
   tideCard: {
     marginTop: 8,
