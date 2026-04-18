@@ -149,14 +149,16 @@ const LiquidGlassTabBar: React.FC<
 
   const tabCount = state.routes.length;
   const slotWidth = barWidth > 0 && tabCount > 0 ? barWidth / tabCount : 0;
-  const indicatorWidth = slotWidth > 0 ? Math.max(84, slotWidth - 2) : 0;
+  const indicatorWidth = slotWidth > 0 ? Math.max(90, slotWidth + 4) : 0;
 
   React.useEffect(() => {
     if (!slotWidth || !indicatorWidth) {
       return;
     }
 
-    const targetX = state.index * slotWidth + (slotWidth - indicatorWidth) / 2;
+    const rawX = state.index * slotWidth + (slotWidth - indicatorWidth) / 2;
+    const maxX = Math.max(0, barWidth - indicatorWidth);
+    const targetX = Math.min(Math.max(rawX, 0), maxX);
 
     if (!hasPositioned.current) {
       indicatorX.value = targetX;
@@ -172,7 +174,7 @@ const LiquidGlassTabBar: React.FC<
       restDisplacementThreshold: 0.2,
       restSpeedThreshold: 0.2,
     });
-  }, [indicatorWidth, indicatorX, slotWidth, state.index]);
+  }, [barWidth, indicatorWidth, indicatorX, slotWidth, state.index]);
 
   const selectorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: indicatorX.value }],
@@ -504,9 +506,9 @@ const styles = StyleSheet.create({
   },
   tabSelector: {
     position: 'absolute',
-    top: 4,
-    bottom: Platform.OS === 'ios' ? 6 : 5,
-    borderRadius: 22,
+    top: 2,
+    bottom: Platform.OS === 'ios' ? 4 : 3,
+    borderRadius: 24,
     overflow: 'hidden',
   },
   tabSelectorBlur: {
@@ -517,7 +519,7 @@ const styles = StyleSheet.create({
   },
   tabSelectorRim: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
   },
   tabItemsRow: {
